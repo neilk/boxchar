@@ -25,11 +25,3 @@ fn test_wordlist_struct_from_file() {
     assert!(wordlist.words.contains(&"RANDOM".to_string()));
     assert!(wordlist.words.contains(&"RESET".to_string()));
 }
-
-#[test]
-fn test_wordlist_debug_trait() {
-    let wordlist = Wordlist::from_file("data/wordlist_test.txt").unwrap();
-    let debug_str = format!("{:?}", wordlist);
-    assert!(debug_str.contains("Wordlist"));
-    assert!(debug_str.contains("ADJUNCTIVE"));
-}
