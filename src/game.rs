@@ -10,12 +10,7 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn from_file<P: AsRef<Path>>(path: P) -> io::Result<Self> {
-        let file = File::open(path)?;
-        let reader = BufReader::new(file);
-        let sides: Vec<String> = reader.lines()
-            .collect::<io::Result<Vec<String>>>()?;
-
+    pub fn from_sides(sides: Vec<String>) -> io::Result<Self> {
         Self::validate_structure(&sides)?;
         Self::validate_content(&sides)?;
 
@@ -25,6 +20,15 @@ impl Game {
         };
         game.compute_valid_digraphs();
         Ok(game)
+    }
+
+    pub fn from_file<P: AsRef<Path>>(path: P) -> io::Result<Self> {
+        let file = File::open(path)?;
+        let reader = BufReader::new(file);
+        let sides: Vec<String> = reader.lines()
+            .collect::<io::Result<Vec<String>>>()?;
+
+        Self::from_sides(sides)
     }
 
     fn validate_structure(sides: &[String]) -> io::Result<()> {

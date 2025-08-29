@@ -73,3 +73,33 @@ fn test_valid_digraphs_generation() {
     assert!(!game.valid_digraphs.contains("AB"));
     assert!(!game.valid_digraphs.contains("BA"));
 }
+
+#[test]
+fn test_from_sides_valid_game() {
+    let sides = vec!["ABC", "DEF", "GHI", "JKL"]
+        .into_iter()
+        .map(String::from)
+        .collect();
+    
+    let game = Game::from_sides(sides).unwrap();
+    
+    assert_eq!(game.sides.len(), 4);
+    assert_eq!(game.sides[0], "ABC");
+    assert_eq!(game.sides[1], "DEF");
+    assert_eq!(game.sides[2], "GHI");
+    assert_eq!(game.sides[3], "JKL");
+    assert_eq!(game.valid_digraphs.len(), 12 * 9); // 12 letters × 9 possible connections each
+}
+
+#[test]
+fn test_from_sides_invalid_duplicate_letters() {
+    let sides = vec!["ABC", "DEF", "GHA", "JKL"]
+        .into_iter()
+        .map(String::from)
+        .collect();
+    
+    let result = Game::from_sides(sides);
+    
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("Duplicate letter"));
+}
