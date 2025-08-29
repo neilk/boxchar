@@ -21,7 +21,7 @@ fn test_extract_digraphs_simple() {
 }
 
 #[test]
-fn test_possible_words_filters_correctly() {
+fn test_possible_words() {
     let sides = sides_from_strs(&["ABC", "DEF", "GHI", "JKL"]);
     let game = Game::from_sides(sides).unwrap();
     
@@ -38,7 +38,7 @@ fn test_possible_words_filters_correctly() {
 }
 
 #[test]
-fn test_random_rainout_example() {
+fn test_possible_words_wordlist_file() {
     let sides = sides_from_strs(&["RNY", "ADM", "IUX", "TOZ"]);
     let game = Game::from_sides(sides).unwrap();
     let wordlist = Wordlist::from_path("data/wordlist_test.txt").unwrap();
