@@ -71,8 +71,6 @@ It may be more optimal to search forwards and backwards. We could simply conside
 "connection character", and look for combinations of words going forwards and backwards. This would 
 entail processing the wordlist twice; one for "forwards" and once for "backwards". This may be extendable to a three word solution by considering subsets of the puzzle.
 
-ad
-
 ## Architecture
 
 ### Core Components
