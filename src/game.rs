@@ -22,7 +22,7 @@ impl Game {
         Ok(game)
     }
 
-    pub fn from_file<P: AsRef<Path>>(path: P) -> io::Result<Self> {
+    pub fn from_path<P: AsRef<Path>>(path: P) -> io::Result<Self> {
         let file = File::open(path)?;
         let reader = BufReader::new(file);
         let sides: Vec<String> = reader.lines()

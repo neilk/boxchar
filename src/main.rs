@@ -14,7 +14,7 @@ fn main() -> std::io::Result<()> {
         sorted_digraphs.iter().map(|s| s.as_str()).collect::<Vec<_>>().join(" ")
     }
     
-    match Game::from_file(game_path) {
+    match Game::from_path(game_path) {
         Ok(game) => {
             println!("Successfully loaded game:");
             for (i, side) in game.sides.iter().enumerate() {
@@ -27,7 +27,7 @@ fn main() -> std::io::Result<()> {
         Err(e) => println!("Error loading game: {}", e),
     }
 
-    match Wordlist::from_file(wordlist_path) {
+    match Wordlist::from_path(wordlist_path) {
         Ok(wordlist) => {
             println!("\nSuccessfully loaded wordlist:");
             println!("Number of words: {}", wordlist.words.len());

@@ -13,7 +13,7 @@ fn create_test_file(content: &str) -> NamedTempFile {
 fn test_valid_game() {
     let content = "ABC\nDEF\nGHI\nJKL\n";
     let file = create_test_file(content);
-    let game = Game::from_file(file.path()).unwrap();
+    let game = Game::from_path(file.path()).unwrap();
     
     assert_eq!(game.sides.len(), 4);
     assert_eq!(game.sides[0], "ABC");
@@ -24,7 +24,7 @@ fn test_valid_game() {
 fn test_invalid_number_of_sides() {
     let content = "ABC\nDEF\nGHI\n";  // Only 3 sides
     let file = create_test_file(content);
-    let result = Game::from_file(file.path());
+    let result = Game::from_path(file.path());
     
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("exactly 4 sides"));
@@ -34,7 +34,7 @@ fn test_invalid_number_of_sides() {
 fn test_uneven_sides() {
     let content = "ABC\nDEF\nGHIJ\nKLM\n";
     let file = create_test_file(content);
-    let result = Game::from_file(file.path());
+    let result = Game::from_path(file.path());
     
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("same length"));
@@ -44,7 +44,7 @@ fn test_uneven_sides() {
 fn test_duplicate_letters() {
     let content = "ABC\nDEF\nGHA\nJKL\n";  // 'A' appears twice
     let file = create_test_file(content);
-    let result = Game::from_file(file.path());
+    let result = Game::from_path(file.path());
     
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("Duplicate letter"));
@@ -54,7 +54,7 @@ fn test_duplicate_letters() {
 fn test_lowercase_letters() {
     let content = "ABC\ndef\nGHI\nJKL\n";
     let file = create_test_file(content);
-    let result = Game::from_file(file.path());
+    let result = Game::from_path(file.path());
     
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("uppercase"));
@@ -64,7 +64,7 @@ fn test_lowercase_letters() {
 fn test_valid_digraphs_generation() {
     let content = "AB\nCD\nEF\nGH\n";
     let file = create_test_file(content);
-    let game = Game::from_file(file.path()).unwrap();
+    let game = Game::from_path(file.path()).unwrap();
     
     // Test specific digraphs that should exist
     assert!(game.valid_digraphs.contains("AC"));
