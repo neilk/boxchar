@@ -101,13 +101,5 @@ impl Game {
         }
     }
 
-    pub fn print_valid_digraphs(&self) {
-        let mut digraphs: Vec<_> = self.valid_digraphs.iter().collect();
-        digraphs.sort();
-        println!("Valid digraphs:");
-        for digraph in digraphs {
-            print!("{} ", digraph);
-        }
-        println!();
-    }
+
 }
