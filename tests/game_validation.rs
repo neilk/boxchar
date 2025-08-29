@@ -1,19 +1,14 @@
 use boxchar::game::Game;
-use std::io::Write;
-use tempfile::NamedTempFile;
 
-// Helper to create temporary test files that clean up automatically
-fn create_test_file(content: &str) -> NamedTempFile {
-    let mut file = NamedTempFile::new().unwrap();
-    file.write_all(content.as_bytes()).unwrap();
-    file
+// Helper to convert string slices to Vec<String> for Game::from_sides
+fn sides_from_strs(sides: &[&str]) -> Vec<String> {
+    sides.iter().map(|s| s.to_string()).collect()
 }
 
 #[test]
 fn test_valid_game() {
-    let content = "ABC\nDEF\nGHI\nJKL\n";
-    let file = create_test_file(content);
-    let game = Game::from_path(file.path()).unwrap();
+    let sides = sides_from_strs(&["ABC", "DEF", "GHI", "JKL"]);
+    let game = Game::from_sides(sides).unwrap();
     
     assert_eq!(game.sides.len(), 4);
     assert_eq!(game.sides[0], "ABC");
@@ -22,9 +17,8 @@ fn test_valid_game() {
 
 #[test]
 fn test_invalid_number_of_sides() {
-    let content = "ABC\nDEF\nGHI\n";  // Only 3 sides
-    let file = create_test_file(content);
-    let result = Game::from_path(file.path());
+    let sides = sides_from_strs(&["ABC", "DEF", "GHI"]); // Only 3 sides
+    let result = Game::from_sides(sides);
     
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("exactly 4 sides"));
@@ -32,9 +26,8 @@ fn test_invalid_number_of_sides() {
 
 #[test]
 fn test_uneven_sides() {
-    let content = "ABC\nDEF\nGHIJ\nKLM\n";
-    let file = create_test_file(content);
-    let result = Game::from_path(file.path());
+    let sides = sides_from_strs(&["ABC", "DEF", "GHIJ", "KLM"]);
+    let result = Game::from_sides(sides);
     
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("same length"));
@@ -42,9 +35,8 @@ fn test_uneven_sides() {
 
 #[test]
 fn test_duplicate_letters() {
-    let content = "ABC\nDEF\nGHA\nJKL\n";  // 'A' appears twice
-    let file = create_test_file(content);
-    let result = Game::from_path(file.path());
+    let sides = sides_from_strs(&["ABC", "DEF", "GHA", "JKL"]); // 'A' appears twice
+    let result = Game::from_sides(sides);
     
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("Duplicate letter"));
@@ -52,9 +44,8 @@ fn test_duplicate_letters() {
 
 #[test]
 fn test_lowercase_letters() {
-    let content = "ABC\ndef\nGHI\nJKL\n";
-    let file = create_test_file(content);
-    let result = Game::from_path(file.path());
+    let sides = sides_from_strs(&["ABC", "def", "GHI", "JKL"]);
+    let result = Game::from_sides(sides);
     
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("uppercase"));
@@ -62,9 +53,8 @@ fn test_lowercase_letters() {
 
 #[test]
 fn test_valid_digraphs_generation() {
-    let content = "AB\nCD\nEF\nGH\n";
-    let file = create_test_file(content);
-    let game = Game::from_path(file.path()).unwrap();
+    let sides = sides_from_strs(&["AB", "CD", "EF", "GH"]);
+    let game = Game::from_sides(sides).unwrap();
     
     // Test specific digraphs that should exist
     assert!(game.valid_digraphs.contains("AC"));
@@ -76,10 +66,7 @@ fn test_valid_digraphs_generation() {
 
 #[test]
 fn test_from_sides_valid_game() {
-    let sides = vec!["ABC", "DEF", "GHI", "JKL"]
-        .into_iter()
-        .map(String::from)
-        .collect();
+    let sides = sides_from_strs(&["ABC", "DEF", "GHI", "JKL"]);
     
     let game = Game::from_sides(sides).unwrap();
     
@@ -93,10 +80,7 @@ fn test_from_sides_valid_game() {
 
 #[test]
 fn test_from_sides_invalid_duplicate_letters() {
-    let sides = vec!["ABC", "DEF", "GHA", "JKL"]
-        .into_iter()
-        .map(String::from)
-        .collect();
+    let sides = sides_from_strs(&["ABC", "DEF", "GHA", "JKL"]);
     
     let result = Game::from_sides(sides);
     
