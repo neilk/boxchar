@@ -1,0 +1,18 @@
+[package]
+name = "boxchar"
+version = "0.1.0"
+edition = "2021"
+authors = ["Neil Kandalgaonkar <neilk@neilk.net>"]
+license = "ISC"
+readme = "README.md"
+
+[dependencies]
+tempfile = "3.2"
+
+[lib]
+name = "boxchar"
+path = "src/lib.rs"
+
+[[bin]]
+name = "boxchar"
+path = "src/main.rs"
