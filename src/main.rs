@@ -1,9 +1,12 @@
-use boxchar::game::Game;  // using our library!
+use boxchar::{game::Game, wordlist::Wordlist};  // using our library!
 use std::{collections::HashSet, path::Path};
 
 fn main() -> std::io::Result<()> {
     let game_path = Path::new("data").join("game.txt");
+    let wordlist_path = Path::new("data").join("wordlist.txt");
+    
     println!("Loading game from: {:?}", game_path);
+    println!("Loading wordlist from: {:?}", wordlist_path);
 
     pub fn format_valid_digraphs(digraphs: &HashSet<String>) -> String {
         let mut sorted_digraphs: Vec<_> = digraphs.iter().collect();
@@ -22,6 +25,15 @@ fn main() -> std::io::Result<()> {
             println!("{}", format_valid_digraphs(&game.valid_digraphs));
         }
         Err(e) => println!("Error loading game: {}", e),
+    }
+
+    match Wordlist::from_file(wordlist_path) {
+        Ok(wordlist) => {
+            println!("\nSuccessfully loaded wordlist:");
+            println!("Number of words: {}", wordlist.words.len());
+            println!("First few words: {:?}", &wordlist.words[..5.min(wordlist.words.len())]);
+        }
+        Err(e) => println!("Error loading wordlist: {}", e),
     }
 
     Ok(())
