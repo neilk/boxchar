@@ -33,7 +33,7 @@ Boxchar is a Rust word game application that implements a letter-based puzzle wh
 - Exports `game` and `build_digraph_list` modules
 - Main application (`src/main.rs`) uses the library to load and display games
 
-**Data Processing (`src/build_digraph_list.rs`)**
+**Data Processing (`src/wordlist.rs`)**
 - Handles wordlist file reading and processing
 - Functions for extracting digraphs from word lists
 

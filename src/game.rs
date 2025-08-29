@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
 use std::collections::{HashSet, HashMap};
+use crate::wordlist::Wordlist;
 
 #[derive(Debug)]
 pub struct Game {
@@ -101,5 +102,17 @@ impl Game {
         }
     }
 
-
+    pub fn possible_words(&self, wordlist: &Wordlist) -> Vec<String> {
+        wordlist.words
+            .iter()
+            .filter(|word| {
+                if let Some(required_digraphs) = wordlist.word_digraphs.get(*word) {
+                    required_digraphs.is_subset(&self.valid_digraphs)
+                } else {
+                    false
+                }
+            })
+            .cloned()
+            .collect()
+    }
 }

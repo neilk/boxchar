@@ -32,6 +32,15 @@ fn main() -> std::io::Result<()> {
             println!("\nSuccessfully loaded wordlist:");
             println!("Number of words: {}", wordlist.words.len());
             println!("First few words: {:?}", &wordlist.words[..5.min(wordlist.words.len())]);
+            
+            if let Ok(game) = Game::from_path("data/game.txt") {
+                let possible_words = game.possible_words(&wordlist);
+                println!("\nFirst 10 possible words for this game:");
+                for word in possible_words.iter().take(10) {
+                    println!("  {}", word);
+                }
+                println!("Total possible words: {}", possible_words.len());
+            }
         }
         Err(e) => println!("Error loading wordlist: {}", e),
     }
