@@ -1,4 +1,4 @@
-use boxchar::{game::Game, wordlist::Wordlist};  // using our library!
+use boxchar::{game::Game, wordlist::Wordlist, solver::Solver};  // using our library!
 use std::{collections::HashSet, path::Path};
 
 fn main() -> std::io::Result<()> {
@@ -40,6 +40,28 @@ fn main() -> std::io::Result<()> {
                     println!("  {}", word);
                 }
                 println!("Total possible words: {}", possible_words.len());
+                
+                // Run the solver
+                println!("\nSolving the puzzle...");
+                let solver = Solver::new(game, wordlist);
+                let solutions = solver.solve();
+                
+                if solutions.is_empty() {
+                    println!("No solutions found!");
+                } else {
+                    println!("Found {} solutions:", solutions.len());
+                    for (i, solution) in solutions.iter().take(10).enumerate() {
+                        println!("Solution {}: {} words", i + 1, solution.words.len());
+                        for word in &solution.words {
+                            print!("{} ", word);
+                        }
+                        println!();
+                    }
+                    
+                    if solutions.len() > 10 {
+                        println!("... and {} more solutions", solutions.len() - 10);
+                    }
+                }
             }
         }
         Err(e) => println!("Error loading wordlist: {}", e),
