@@ -3,6 +3,16 @@ use std::io::{self, BufRead, BufReader};
 use std::path::Path;
 use std::collections::{HashMap, HashSet};
 
+pub fn has_adjacent_repeated_letters(word: &str) -> bool {
+    let chars: Vec<char> = word.chars().collect();
+    for i in 0..chars.len().saturating_sub(1) {
+        if chars[i] == chars[i + 1] {
+            return true;
+        }
+    }
+    false
+}
+
 pub fn extract_digraphs(word: &str) -> HashSet<String> {
     let chars: Vec<char> = word.chars().collect();
     let mut digraphs = HashSet::new();
@@ -28,6 +38,7 @@ impl Wordlist {
         let words: Vec<String> = reader
             .lines()
             .map_while(Result::ok)
+            .filter(|word| !has_adjacent_repeated_letters(word))
             .collect();
         
         let mut word_digraphs = HashMap::new();
