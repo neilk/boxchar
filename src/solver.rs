@@ -1,4 +1,5 @@
 use std::collections::HashSet;
+use std::fmt;
 use crate::game::Game;
 use crate::wordlist::Wordlist;
 
@@ -12,6 +13,12 @@ impl Solution {
     pub fn new(words: Vec<String>) -> Self {
         let score = words.len();
         Solution { words, score }
+    }
+}
+
+impl fmt::Display for Solution {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.words.join("-"))
     }
 }
 
@@ -119,6 +126,15 @@ impl Solver {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_solution_display() {
+        let solution = Solution::new(vec!["WORD1".to_string(), "WORD2".to_string(), "WORD3".to_string()]);
+        assert_eq!(solution.to_string(), "WORD1-WORD2-WORD3");
+        
+        let single_word = Solution::new(vec!["HELLO".to_string()]);
+        assert_eq!(single_word.to_string(), "HELLO");
+    }
 
     #[test]
     fn test_covers_all_letters() {

@@ -93,13 +93,10 @@ RNI
 
 ```bash
 # Using positional game specification
-cargo run -- "YFA,OTK,LGW,RNI"
+cargo run -- yfa,otk,lgw,rni
 
 # Using game file with custom wordlist
 cargo run -- --game data/game.txt --wordlist data/custom_wordlist.txt
-
-# Mixed case input (automatically converted to uppercase)
-cargo run -- "yfa,otk,lgw,rni"
 
 # Get help
 cargo run -- --help

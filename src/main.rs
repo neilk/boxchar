@@ -1,5 +1,6 @@
 use boxchar::{game::Game, wordlist::Wordlist, solver::Solver};  // using our library!
 use clap::Parser;
+use log::{info, debug};
 use std::{collections::HashSet, path::Path};
 
 #[derive(Parser)]
@@ -38,6 +39,7 @@ fn validate_game_spec(game_spec: &str) -> Result<Vec<String>, String> {
 }
 
 fn main() -> std::io::Result<()> {
+    env_logger::init();
     let args = Args::parse();
     
     let wordlist_path = Path::new(&args.wordlist);
@@ -48,7 +50,7 @@ fn main() -> std::io::Result<()> {
             // Parse comma-separated game specification
             match validate_game_spec(spec) {
                 Ok(sides) => {
-                    println!("Loading game from specification: {}", spec);
+                    debug!("Loading game from specification: {}", spec);
                     match Game::from_sides(sides) {
                         Ok(game) => game,
                         Err(e) => {
@@ -66,7 +68,7 @@ fn main() -> std::io::Result<()> {
         (None, Some(path)) => {
             // Load game from file
             let game_path = Path::new(path);
-            println!("Loading game from: {:?}", game_path);
+            debug!("Loading game from: {:?}", game_path);
             match Game::from_path(game_path) {
                 Ok(game) => game,
                 Err(e) => {
@@ -85,7 +87,7 @@ fn main() -> std::io::Result<()> {
         }
     };
     
-    println!("Loading wordlist from: {:?}", wordlist_path);
+    debug!("Loading wordlist from: {:?}", wordlist_path);
 
     pub fn format_valid_digraphs(digraphs: &HashSet<String>) -> String {
         let mut sorted_digraphs: Vec<_> = digraphs.iter().collect();
@@ -93,52 +95,42 @@ fn main() -> std::io::Result<()> {
         sorted_digraphs.iter().map(|s| s.as_str()).collect::<Vec<_>>().join(" ")
     }
     
-    println!("Successfully loaded game:");
+    debug!("Successfully loaded game:");
     for (i, side) in game.sides.iter().enumerate() {
-        println!("Side {}: {} ({} letters)", i, side, side.len());
+        debug!("Side {}: {} ({} letters)", i, side, side.len());
     }
-    println!("Number of valid digraphs in this game: {}", game.valid_digraphs.len());
-    println!("Valid digraphs in this game:");
-    println!("{}", format_valid_digraphs(&game.valid_digraphs));
+    debug!("Number of valid digraphs in this game: {}", game.valid_digraphs.len());
+    debug!("Valid digraphs in this game:");
+    debug!("{}", format_valid_digraphs(&game.valid_digraphs));
 
     match Wordlist::from_path(wordlist_path) {
         Ok(wordlist) => {
-            println!("\nSuccessfully loaded wordlist:");
-            println!("Number of words: {}", wordlist.words.len());
-            println!("First few words: {:?}", &wordlist.words[..5.min(wordlist.words.len())]);
-            
+            debug!("Successfully loaded wordlist:");
+            debug!("Number of words: {}", wordlist.words.len());            
             {
                 let possible_words = game.possible_words(&wordlist);
-                println!("\nFirst 10 possible words for this game:");
+                debug!("\nFirst 10 possible words for this game:");
                 for word in possible_words.iter().take(10) {
-                    println!("  {}", word);
+                    debug!("  {}", word);
                 }
-                println!("Total possible words: {}", possible_words.len());
+                debug!("Total possible words: {}", possible_words.len());
                 
                 // Run the solver
-                println!("\nSolving the puzzle...");
+                debug!("\nSolving the puzzle...");
                 let solver = Solver::new(game, wordlist);
                 let solutions = solver.solve();
                 
                 if solutions.is_empty() {
-                    println!("No solutions found!");
+                    debug!("No solutions found!");
                 } else {
-                    println!("Found {} solutions:", solutions.len());
-                    for (i, solution) in solutions.iter().take(10).enumerate() {
-                        println!("Solution {}: {} words", i + 1, solution.words.len());
-                        for word in &solution.words {
-                            print!("{} ", word);
-                        }
-                        println!();
-                    }
-                    
-                    if solutions.len() > 10 {
-                        println!("... and {} more solutions", solutions.len() - 10);
+                    debug!("Found {} solutions.", solutions.len());
+                    for solution in solutions.iter() {
+                        println!("{}", solution);
                     }
                 }
             }
         }
-        Err(e) => println!("Error loading wordlist: {}", e),
+        Err(e) => eprintln!("Error loading wordlist: {}", e),
     }
 
     Ok(())
