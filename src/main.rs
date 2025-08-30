@@ -1,9 +1,31 @@
 use boxchar::{game::Game, wordlist::Wordlist, solver::Solver};  // using our library!
+use clap::Parser;
 use std::{collections::HashSet, path::Path};
 
+#[derive(Parser)]
+#[command(name = "boxchar")]
+#[command(about = "A Rust word game application for Letter Boxed puzzles")]
+struct Args {
+    #[arg(long)]
+    game: Option<String>,
+    
+    #[arg(long, default_value = "data/wordlist.txt")]
+    wordlist: String,
+}
+
 fn main() -> std::io::Result<()> {
-    let game_path = Path::new("data").join("game.txt");
-    let wordlist_path = Path::new("data").join("wordlist.txt");
+    let args = Args::parse();
+    
+    let wordlist_path = Path::new(&args.wordlist);
+    
+    // Handle game path - if not provided, print error and exit
+    let game_path = match args.game {
+        Some(path) => Path::new(&path).to_path_buf(),
+        None => {
+            eprintln!("Error: --game option is required");
+            std::process::exit(1);
+        }
+    };
     
     println!("Loading game from: {:?}", game_path);
     println!("Loading wordlist from: {:?}", wordlist_path);
@@ -14,7 +36,7 @@ fn main() -> std::io::Result<()> {
         sorted_digraphs.iter().map(|s| s.as_str()).collect::<Vec<_>>().join(" ")
     }
     
-    match Game::from_path(game_path) {
+    match Game::from_path(&game_path) {
         Ok(game) => {
             println!("Successfully loaded game:");
             for (i, side) in game.sides.iter().enumerate() {
@@ -33,7 +55,7 @@ fn main() -> std::io::Result<()> {
             println!("Number of words: {}", wordlist.words.len());
             println!("First few words: {:?}", &wordlist.words[..5.min(wordlist.words.len())]);
             
-            if let Ok(game) = Game::from_path("data/game.txt") {
+            if let Ok(game) = Game::from_path(&game_path) {
                 let possible_words = game.possible_words(&wordlist);
                 println!("\nFirst 10 possible words for this game:");
                 for word in possible_words.iter().take(10) {
