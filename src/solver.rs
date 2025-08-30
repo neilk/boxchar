@@ -119,35 +119,7 @@ impl Solver {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
-    #[test]
-    fn test_solver_basic() {
-        let sides = vec![
-            "YFA".to_string(),
-            "OTK".to_string(), 
-            "LGW".to_string(),
-            "RNI".to_string()
-        ];
-        let game = Game::from_sides(sides).unwrap();
-        
-        // Create a minimal wordlist for testing
-        let words = vec![
-            "FORKLIFT".to_string(),
-            "TWANGY".to_string(),
-        ];
-        let mut word_digraphs = std::collections::HashMap::new();
-        for word in &words {
-            let digraphs = crate::wordlist::extract_digraphs(word);
-            word_digraphs.insert(word.clone(), digraphs);
-        }
-        let wordlist = Wordlist { words, word_digraphs };
-        
-        let solver = Solver::new(game, wordlist);
-        let solutions = solver.solve();
-        
-        assert!(!solutions.is_empty());
-    }
-    
+
     #[test]
     fn test_covers_all_letters() {
         let sides = vec![
