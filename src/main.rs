@@ -6,6 +6,9 @@ use std::{collections::HashSet, path::Path};
 #[command(name = "boxchar")]
 #[command(about = "A Rust word game application for Letter Boxed puzzles")]
 struct Args {
+    /// Game specification as comma-separated sides (e.g., "ABC,DEF,GHI,JKL")
+    game_spec: Option<String>,
+    
     #[arg(long)]
     game: Option<String>,
     
@@ -13,21 +16,75 @@ struct Args {
     wordlist: String,
 }
 
+fn validate_game_spec(game_spec: &str) -> Result<Vec<String>, String> {
+    // Check for invalid characters
+    for ch in game_spec.chars() {
+        if !ch.is_ascii_alphabetic() && ch != ',' {
+            return Err(format!("Invalid character '{}' in game specification. Only A-Z, a-z, and commas are allowed.", ch));
+        }
+    }
+    
+    // Split by comma and convert to uppercase
+    let sides: Vec<String> = game_spec
+        .split(',')
+        .map(|s| s.to_uppercase())
+        .collect();
+    
+    if sides.is_empty() {
+        return Err("Game specification cannot be empty".to_string());
+    }
+    
+    Ok(sides)
+}
+
 fn main() -> std::io::Result<()> {
     let args = Args::parse();
     
     let wordlist_path = Path::new(&args.wordlist);
     
-    // Handle game path - if not provided, print error and exit
-    let game_path = match args.game {
-        Some(path) => Path::new(&path).to_path_buf(),
-        None => {
-            eprintln!("Error: --game option is required");
+    // Handle game - either from positional argument or --game option
+    let game = match (&args.game_spec, &args.game) {
+        (Some(spec), None) => {
+            // Parse comma-separated game specification
+            match validate_game_spec(spec) {
+                Ok(sides) => {
+                    println!("Loading game from specification: {}", spec);
+                    match Game::from_sides(sides) {
+                        Ok(game) => game,
+                        Err(e) => {
+                            eprintln!("Error creating game from specification: {}", e);
+                            std::process::exit(1);
+                        }
+                    }
+                }
+                Err(e) => {
+                    eprintln!("Error parsing game specification: {}", e);
+                    std::process::exit(1);
+                }
+            }
+        }
+        (None, Some(path)) => {
+            // Load game from file
+            let game_path = Path::new(path);
+            println!("Loading game from: {:?}", game_path);
+            match Game::from_path(game_path) {
+                Ok(game) => game,
+                Err(e) => {
+                    eprintln!("Error loading game: {}", e);
+                    std::process::exit(1);
+                }
+            }
+        }
+        (Some(_), Some(_)) => {
+            eprintln!("Error: Cannot specify both game specification and --game option");
+            std::process::exit(1);
+        }
+        (None, None) => {
+            eprintln!("Error: Either game specification or --game option is required");
             std::process::exit(1);
         }
     };
     
-    println!("Loading game from: {:?}", game_path);
     println!("Loading wordlist from: {:?}", wordlist_path);
 
     pub fn format_valid_digraphs(digraphs: &HashSet<String>) -> String {
@@ -36,18 +93,13 @@ fn main() -> std::io::Result<()> {
         sorted_digraphs.iter().map(|s| s.as_str()).collect::<Vec<_>>().join(" ")
     }
     
-    match Game::from_path(&game_path) {
-        Ok(game) => {
-            println!("Successfully loaded game:");
-            for (i, side) in game.sides.iter().enumerate() {
-                println!("Side {}: {} ({} letters)", i, side, side.len());
-            }
-            println!("Number of valid digraphs in this game: {}", game.valid_digraphs.len());
-            println!("Valid digraphs in this game:");
-            println!("{}", format_valid_digraphs(&game.valid_digraphs));
-        }
-        Err(e) => println!("Error loading game: {}", e),
+    println!("Successfully loaded game:");
+    for (i, side) in game.sides.iter().enumerate() {
+        println!("Side {}: {} ({} letters)", i, side, side.len());
     }
+    println!("Number of valid digraphs in this game: {}", game.valid_digraphs.len());
+    println!("Valid digraphs in this game:");
+    println!("{}", format_valid_digraphs(&game.valid_digraphs));
 
     match Wordlist::from_path(wordlist_path) {
         Ok(wordlist) => {
@@ -55,7 +107,7 @@ fn main() -> std::io::Result<()> {
             println!("Number of words: {}", wordlist.words.len());
             println!("First few words: {:?}", &wordlist.words[..5.min(wordlist.words.len())]);
             
-            if let Ok(game) = Game::from_path(&game_path) {
+            {
                 let possible_words = game.possible_words(&wordlist);
                 println!("\nFirst 10 possible words for this game:");
                 for word in possible_words.iter().take(10) {
