@@ -29,24 +29,33 @@ pub fn extract_digraphs(word: &str) -> HashSet<String> {
 pub struct Wordlist {
     pub words: Vec<String>,
     pub word_digraphs: HashMap<String, HashSet<String>>,
+    pub valid_digraphs: HashSet<String>,
 }
 
 impl Wordlist {
+    pub fn from_words(words: Vec<String>) -> Self {
+        let mut word_digraphs = HashMap::new();
+        let mut valid_digraphs = HashSet::new();
+
+        for word in &words {
+            if has_adjacent_repeated_letters(word) {
+                continue;
+            }
+            let digraphs = extract_digraphs(word);
+            valid_digraphs.extend(digraphs.iter().cloned());
+            word_digraphs.insert(word.clone(), digraphs);
+        }
+
+        Wordlist { words, word_digraphs, valid_digraphs }
+    }
+
     pub fn from_path<P: AsRef<Path>>(path: P) -> io::Result<Self> {
         let file = File::open(path)?;
         let reader = BufReader::new(file);
         let words: Vec<String> = reader
             .lines()
             .map_while(Result::ok)
-            .filter(|word| !has_adjacent_repeated_letters(word))
             .collect();
-        
-        let mut word_digraphs = HashMap::new();
-        for word in &words {
-            let digraphs = extract_digraphs(word);
-            word_digraphs.insert(word.clone(), digraphs);
-        }
-        
-        Ok(Wordlist { words, word_digraphs })
+        Ok(Self::from_words(words))
     }
 }

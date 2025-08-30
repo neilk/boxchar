@@ -129,7 +129,11 @@ mod tests {
             "GH".to_string()
         ];
         let game = Game::from_sides(sides).unwrap();
-        let wordlist = Wordlist { words: vec![], word_digraphs: std::collections::HashMap::new() };
+        let wordlist = Wordlist { 
+            words: vec![], 
+            word_digraphs: std::collections::HashMap::new(),
+            valid_digraphs: std::collections::HashSet::new()
+        };
         let solver = Solver::new(game, wordlist);
         
         let word1 = "ABCDEFGH".to_string();

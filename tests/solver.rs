@@ -15,13 +15,7 @@ fn test_solver_basic() {
         "FORKLIFT".to_string(),
         "TWANGY".to_string(),
     ];
-    let mut word_digraphs = std::collections::HashMap::new();
-    for word in &words {
-        let digraphs = extract_digraphs(word);
-        word_digraphs.insert(word.clone(), digraphs);
-    }
-    let wordlist = Wordlist { words, word_digraphs };
-    
+    let wordlist = Wordlist::from_words(words);
     let solver = Solver::new(game, wordlist);
     let solutions = solver.solve();
     

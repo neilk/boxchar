@@ -103,11 +103,13 @@ impl Game {
     }
 
     pub fn possible_words(&self, wordlist: &Wordlist) -> Vec<String> {
+        let usable_digraphs: HashSet<&String> = self.valid_digraphs.intersection(&wordlist.valid_digraphs).collect();
+
         wordlist.words
             .iter()
             .filter(|word| {
                 if let Some(required_digraphs) = wordlist.word_digraphs.get(*word) {
-                    required_digraphs.is_subset(&self.valid_digraphs)
+                    required_digraphs.iter().all(|d| usable_digraphs.contains(d))
                 } else {
                     false
                 }
