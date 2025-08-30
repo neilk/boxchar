@@ -3,7 +3,9 @@
 A solver for the New York Times word puzzle, "Letter Boxed". 
 
 Letter Boxed puzzles are a set of letters in a box shape. Players must connect all the letters in the puzzle 
-with a chain of valid words. 
+with a chain of valid words, as in the following screenshot.
+
+![Screenshot of NYTimes Letter Boxed](NY_Times_Letter_Boxed.png)
 
 ## Game Rules
 
@@ -166,3 +168,5 @@ Wordlist files should contain one word per line, with words in uppercase. The so
 Copyright Neil Kandalgaonkar, 2025. 
 
 This software is *NOT* freely redistributable.
+
+Screenshot by The New York Times - The New York Times Games mobile app, sourced from [Wikipedia's File:NY Times Letter Boxed.png](https://en.wikipedia.org/w/index.php?curid=76415365).
