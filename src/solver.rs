@@ -39,12 +39,19 @@ impl Solver {
     }
 
     pub fn solve(&self) -> Vec<Solution> {
+        self.solve_with_max_solutions(100)
+    }
+
+    pub fn solve_with_max_solutions(&self, max_solutions: usize) -> Vec<Solution> {
         let mut solutions = Vec::new();
         
         // Try single word solutions first
         for word in &self.possible_words {
             if self.covers_all_letters(&[word]) {
                 solutions.push(Solution::new(vec![word.clone()]));
+                if solutions.len() >= max_solutions {
+                    return solutions;
+                }
             }
         }
         
@@ -54,6 +61,7 @@ impl Solver {
         }
         
         // Try two word solutions (O(n²))
+        let mut two_word_solutions = Vec::new();
         for word1 in &self.possible_words {
             let last_char = word1.chars().last().unwrap();
             
@@ -61,19 +69,23 @@ impl Solver {
                 if word2.chars().next() == Some(last_char) {
                     let word_pair = [word1, word2];
                     if self.covers_all_letters(&word_pair) {
-                        solutions.push(Solution::new(vec![word1.clone(), word2.clone()]));
+                        two_word_solutions.push(Solution::new(vec![word1.clone(), word2.clone()]));
+                        if two_word_solutions.len() >= max_solutions {
+                            break;
+                        }
                     }
                 }
             }
-        }
-        
-        // If we found two word solutions, return them
-        if !solutions.is_empty() {
-            return solutions;
+            if two_word_solutions.len() >= max_solutions {
+                break;
+            }
         }
         
         // Try three word solutions (O(n³) but limited to make it practical)
-        for word1 in &self.possible_words {
+        let mut three_word_solutions = Vec::new();
+        let remaining_slots = max_solutions.saturating_sub(two_word_solutions.len());
+        
+        'outer: for word1 in &self.possible_words {
             let last_char1 = word1.chars().last().unwrap();
             
             for word2 in &self.possible_words {
@@ -84,11 +96,14 @@ impl Solver {
                         if word3.chars().next() == Some(last_char2) {
                             let word_trio = [word1, word2, word3];
                             if self.covers_all_letters(&word_trio) {
-                                solutions.push(Solution::new(vec![
+                                three_word_solutions.push(Solution::new(vec![
                                     word1.clone(), 
                                     word2.clone(), 
                                     word3.clone()
                                 ]));
+                                if three_word_solutions.len() >= remaining_slots {
+                                    break 'outer;
+                                }
                             }
                         }
                     }
@@ -96,8 +111,10 @@ impl Solver {
             }
         }
         
-        // Sort solutions by score (fewer words is better)
-        solutions.sort_by_key(|s| s.score);
+        // Combine solutions: two-word first, then three-word
+        solutions.extend(two_word_solutions);
+        solutions.extend(three_word_solutions);
+        
         solutions
     }
     

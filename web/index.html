@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Letter Boxed Solver</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+        
+        .game-input {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .side-input {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .side-input label {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .side-input input {
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+            text-transform: uppercase;
+        }
+        
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        
+        button:hover {
+            background: #0056b3;
+        }
+        
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .solutions {
+            margin-top: 20px;
+        }
+        
+        .solution {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+            border-left: 4px solid #007bff;
+        }
+        
+        .solution-words {
+            font-size: 18px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        
+        .solution-score {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .error {
+            color: #dc3545;
+            background: #f8d7da;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .example {
+            background: #e7f3ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        
+        .example h3 {
+            margin-top: 0;
+            color: #0066cc;
+        }
+        
+        .timing {
+            color: #28a745;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Letter Boxed Solver</h1>
+    <p>Enter the letters for each side of the Letter Boxed puzzle. The solver will find word combinations that use all letters.</p>
+    
+    <div class="example">
+        <h3>Example Puzzle</h3>
+        <p>Try this example puzzle:</p>
+        <ul>
+            <li>Side 1: JGH</li>
+            <li>Side 2: NVY</li>
+            <li>Side 3: EID</li>
+            <li>Side 4: ORP</li>
+        </ul>
+        <button onclick="loadExample()">Load Example</button>
+    </div>
+
+    <div class="container">
+        <h2>Enter Puzzle</h2>
+        <div class="game-input">
+            <div class="side-input">
+                <label for="side1">Side 1:</label>
+                <input type="text" id="side1" placeholder="e.g., JGH" maxlength="10">
+            </div>
+            <div class="side-input">
+                <label for="side2">Side 2:</label>
+                <input type="text" id="side2" placeholder="e.g., NVY" maxlength="10">
+            </div>
+            <div class="side-input">
+                <label for="side3">Side 3:</label>
+                <input type="text" id="side3" placeholder="e.g., EID" maxlength="10">
+            </div>
+            <div class="side-input">
+                <label for="side4">Side 4:</label>
+                <input type="text" id="side4" placeholder="e.g., ORP" maxlength="10">
+            </div>
+        </div>
+        
+        <button id="solveBtn" onclick="solvePuzzle()">Solve Puzzle</button>
+    </div>
+
+    <div class="container" id="results" style="display: none;">
+        <h2>Solutions</h2>
+        <div id="solutionsList"></div>
+    </div>
+
+    <script type="module">
+        import init, { solve_game } from './pkg/boxchar.js';
+        
+        let wasm = null;
+        let wordlist = null;
+        
+        async function loadWordlist() {
+            try {
+                const response = await fetch('./wordlist.txt');
+                const text = await response.text();
+                wordlist = text.split('\n').map(word => word.trim()).filter(word => word.length > 0);
+                console.log(`Loaded ${wordlist.length} words from wordlist`);
+                return wordlist;
+            } catch (error) {
+                console.error('Failed to load wordlist:', error);
+                throw new Error('Failed to load wordlist');
+            }
+        }
+        
+        async function run() {
+            try {
+                // Load WASM and wordlist in parallel
+                const [wasmModule, loadedWordlist] = await Promise.all([
+                    init(),
+                    loadWordlist()
+                ]);
+                
+                wasm = wasmModule;
+                console.log('WASM module and wordlist loaded');
+                
+                // Enable the solve button once everything is loaded
+                document.getElementById('solveBtn').disabled = false;
+                document.getElementById('solveBtn').textContent = 'Solve Puzzle';
+            } catch (error) {
+                console.error('Initialization failed:', error);
+                showError('Failed to initialize solver: ' + error.message);
+            }
+        }
+        
+        function savePuzzleToStorage() {
+            const puzzle = {
+                side1: document.getElementById('side1').value,
+                side2: document.getElementById('side2').value,
+                side3: document.getElementById('side3').value,
+                side4: document.getElementById('side4').value
+            };
+            localStorage.setItem('letterBoxedPuzzle', JSON.stringify(puzzle));
+        }
+        
+        function loadPuzzleFromStorage() {
+            try {
+                const saved = localStorage.getItem('letterBoxedPuzzle');
+                if (saved) {
+                    const puzzle = JSON.parse(saved);
+                    document.getElementById('side1').value = puzzle.side1 || '';
+                    document.getElementById('side2').value = puzzle.side2 || '';
+                    document.getElementById('side3').value = puzzle.side3 || '';
+                    document.getElementById('side4').value = puzzle.side4 || '';
+                }
+            } catch (error) {
+                console.warn('Failed to load saved puzzle:', error);
+            }
+        }
+        
+        function setupInputListeners() {
+            // Save to localStorage whenever input changes
+            ['side1', 'side2', 'side3', 'side4'].forEach(id => {
+                document.getElementById(id).addEventListener('input', savePuzzleToStorage);
+            });
+        }
+        
+        window.loadExample = function() {
+            document.getElementById('side1').value = 'JGH';
+            document.getElementById('side2').value = 'NVY';
+            document.getElementById('side3').value = 'EID';
+            document.getElementById('side4').value = 'ORP';
+            // Save the example to localStorage
+            savePuzzleToStorage();
+        }
+        
+        window.solvePuzzle = function() {
+            if (!wasm || !wordlist) {
+                showError('Solver not ready yet. Please wait and try again.');
+                return;
+            }
+            
+            const side1 = document.getElementById('side1').value.toUpperCase().trim();
+            const side2 = document.getElementById('side2').value.toUpperCase().trim();
+            const side3 = document.getElementById('side3').value.toUpperCase().trim();
+            const side4 = document.getElementById('side4').value.toUpperCase().trim();
+            
+            if (!side1 || !side2 || !side3 || !side4) {
+                showError('Please fill in all four sides of the puzzle.');
+                return;
+            }
+            
+            const sides = [side1, side2, side3, side4];
+            
+            // Show loading state
+            const solveBtn = document.getElementById('solveBtn');
+            const originalText = solveBtn.textContent;
+            solveBtn.textContent = 'Solving...';
+            solveBtn.disabled = true;
+            
+            const resultsDiv = document.getElementById('results');
+            const solutionsList = document.getElementById('solutionsList');
+            
+            solutionsList.innerHTML = '<div class="loading">Searching for solutions...</div>';
+            resultsDiv.style.display = 'block';
+            
+            try {
+                // Start timer
+                const startTime = performance.now();
+                
+                // Call the WASM function with the loaded wordlist
+                const solutions = solve_game(sides, wordlist);
+                
+                // Calculate elapsed time
+                const endTime = performance.now();
+                const elapsedMs = Math.round(endTime - startTime);
+                
+                // Display results
+                displaySolutions(solutions, elapsedMs);
+            } catch (error) {
+                showError('Error solving puzzle: ' + error.message);
+                resultsDiv.style.display = 'none';
+            } finally {
+                // Reset button state
+                solveBtn.textContent = originalText;
+                solveBtn.disabled = false;
+            }
+        }
+        
+        function displaySolutions(solutions, elapsedMs = null) {
+            const solutionsList = document.getElementById('solutionsList');
+            
+            if (solutions.length === 0) {
+                solutionsList.innerHTML = '<div class="error">No solutions found. Try a different puzzle or check your input.</div>';
+                return;
+            }
+            
+            // Check if first solution is an error message
+            if (solutions[0].startsWith('Error:')) {
+                solutionsList.innerHTML = `<div class="error">${solutions[0]}</div>`;
+                return;
+            }
+            
+            let html = `<p>Found ${solutions.length} solution${solutions.length === 1 ? '' : 's'}`;
+            if (elapsedMs !== null) {
+                html += ` in <span class="timing">${elapsedMs}ms</span>`;
+            }
+            html += `:</p>`;
+            
+            solutions.forEach((solution, index) => {
+                const wordCount = solution.split('-').length;
+                html += `
+                    <div class="solution">
+                        <div class="solution-words">${solution}</div>
+                        <div class="solution-score">${wordCount} word${wordCount === 1 ? '' : 's'}</div>
+                    </div>
+                `;
+            });
+            
+            solutionsList.innerHTML = html;
+        }
+        
+        function showError(message) {
+            const solutionsList = document.getElementById('solutionsList');
+            const resultsDiv = document.getElementById('results');
+            
+            solutionsList.innerHTML = `<div class="error">${message}</div>`;
+            resultsDiv.style.display = 'block';
+        }
+        
+        // Initialize everything when page loads
+        async function initialize() {
+            // Load saved puzzle from localStorage
+            loadPuzzleFromStorage();
+            
+            // Set up input listeners to save changes
+            setupInputListeners();
+            
+            // Disable solve button initially until WASM and wordlist load
+            document.getElementById('solveBtn').disabled = true;
+            document.getElementById('solveBtn').textContent = 'Loading...';
+            
+            // Initialize WASM
+            await run();
+        }
+        
+        // Start initialization
+        initialize();
+    </script>
+</body>
+</html>

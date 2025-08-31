@@ -19,6 +19,10 @@ Boxchar is a Rust word game application that implements a letter-based puzzle wh
 - `cargo clippy` - Run linting
 - `cargo fmt` - Format code
 
+### Web/WASM Build
+- `./build-web.sh` - Build WASM package and set up web directory
+- `cd web && npx http-server -p 8000` - Serve web application locally
+
 ## Problem statement
 
 Letter Boxed is a word game where the player is given a set of letters, all different, laid out as a square.
