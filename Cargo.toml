@@ -11,10 +11,14 @@ clap = { version = "4.0", features = ["derive"] }
 env_logger = "0.11.8"
 log = "0.4.27"
 tempfile = "3.2"
+wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
+js-sys = "0.3"
+web-sys = "0.3"
 
 [lib]
 name = "boxchar"
 path = "src/lib.rs"
+crate-type = ["cdylib", "rlib"]
 
 [[bin]]
 name = "boxchar"
