@@ -111,9 +111,13 @@ fn solve_recursive<L: Clone>(
     labels: &mut Array1<L>,
     matrix: &mut Array2<bool>,
 ) -> Vec<VecDeque<L>> {
-    // If matrix is empty, we found a solution (empty tail)
+    let mut solutions = Vec::new();
+
+    // If matrix is empty, the caller found a solution!
+    // We indicate to our callers that we found a solution by returning a Vec with one empty VecDeque
     if matrix.ncols() == 0 {
-        return vec![VecDeque::new()];
+        solutions.push(VecDeque::new());
+        return solutions;
     }
     
     // If any column is empty, no solution exists
@@ -133,7 +137,6 @@ fn solve_recursive<L: Clone>(
     // Choose column with minimum number of 1s (heuristic)
     let chosen_col = choose_column(&matrix);
     
-    let mut all_solutions = Vec::new();
     
     // Try each row that has a 1 in the chosen column
     for row in 0..matrix.nrows() {
@@ -144,25 +147,21 @@ fn solve_recursive<L: Clone>(
         let current_label = labels[row].clone();
         
         // Reduce the matrix by selecting this row
-        let (reduced_labels, reduced_matrix) = remove_row_and_covered_columns(labels, matrix, row);
-        
-        // Recursively solve the reduced problem
-        let mut reduced_labels_owned = reduced_labels;
-        let mut reduced_matrix_owned = reduced_matrix;
-        
+        let (mut reduced_labels, mut reduced_matrix) = remove_row_and_covered_columns(labels, matrix, row);
+
         let tail_solutions = solve_recursive(
-            &mut reduced_labels_owned,
-            &mut reduced_matrix_owned,
+            &mut reduced_labels,
+            &mut reduced_matrix,
         );
         
         // Prepend current label to each tail solution
         for mut tail in tail_solutions {
             tail.push_front(current_label.clone());
-            all_solutions.push(tail);
+            solutions.push(tail);
         }
     }
     
-    all_solutions
+    solutions
 }
 
 /// Choose the column with the minimum number of 1s (Knuth's heuristic)
@@ -197,13 +196,13 @@ fn remove_row_and_covered_columns<T: Clone>(
             covered_cols.push(col);
         }
     }
-    
-    // Find rows that conflict with the selected row (have 1s in covered columns)
-    let mut conflicting_rows = Vec::new();
+
+    // Find rows that have at least one column already covered with the selected row
+    let mut rows_already_covered = Vec::new();
     for row in 0..matrix.nrows() {
         for &col in &covered_cols {
             if matrix[[row, col]] {
-                conflicting_rows.push(row);
+                rows_already_covered.push(row);
                 break;
             }
         }
@@ -211,13 +210,14 @@ fn remove_row_and_covered_columns<T: Clone>(
     
     // Create indices for remaining rows and columns
     let remaining_rows: Vec<_> = (0..matrix.nrows())
-        .filter(|&row| !conflicting_rows.contains(&row))
+        .filter(|&row| !rows_already_covered.contains(&row))
         .collect();
     let remaining_cols: Vec<_> = (0..matrix.ncols())
         .filter(|&col| !covered_cols.contains(&col))
         .collect();
     
-    // Use select to create new arrays
+    // Use select to create new arrays for labels and the matrix. 
+    // The .select method avoids copying!
     let new_labels = labels.select(Axis(0), &remaining_rows);
     let new_matrix = matrix
         .select(Axis(0), &remaining_rows)
