@@ -1,5 +1,5 @@
 use ndarray::{Array1, Array2, ArrayView1, ArrayView2, Axis};
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 
 /// Universe containing elements that need to be covered exactly once
 #[derive(Debug, Clone)]
@@ -44,13 +44,15 @@ where
         // Convert to working arrays
         let mut working_labels = labels_array;
         let mut working_matrix = matrix;
-        let mut solution = Vec::new();
         
-        let solutions = solve_recursive(&mut working_labels, &mut working_matrix, &mut solution);
+        let solutions = solve_recursive(&mut working_labels, &mut working_matrix);
         if solutions.is_empty() {
             None
         } else {
-            Some(Solution::new(solutions))
+            let vec_solutions: Vec<Vec<L>> = solutions.into_iter()
+                .map(|deque| deque.into_iter().collect())
+                .collect();
+            Some(Solution::new(vec_solutions))
         }
     }
 }
@@ -93,24 +95,25 @@ pub fn solve_matrix<L: Clone>(
     // Convert to working arrays
     let mut working_labels = subset_labels.to_owned();
     let mut working_matrix = matrix.to_owned();
-    let mut solution = Vec::new();
     
-    let solutions = solve_recursive(&mut working_labels, &mut working_matrix, &mut solution);
+    let solutions = solve_recursive(&mut working_labels, &mut working_matrix);
     if solutions.is_empty() {
         None
     } else {
-        Some(Solution::new(solutions))
+        let vec_solutions: Vec<Vec<L>> = solutions.into_iter()
+            .map(|deque| deque.into_iter().collect())
+            .collect();
+        Some(Solution::new(vec_solutions))
     }
 }
 
-fn solve_recursive<T: Clone>(
-    labels: &mut Array1<T>,
+fn solve_recursive<L: Clone>(
+    labels: &mut Array1<L>,
     matrix: &mut Array2<bool>,
-    solution: &mut Vec<T>,
-) -> Vec<Vec<T>> {
-    // If matrix is empty, we found a solution
+) -> Vec<VecDeque<L>> {
+    // If matrix is empty, we found a solution (empty tail)
     if matrix.ncols() == 0 {
-        return vec![solution.clone()];
+        return vec![VecDeque::new()];
     }
     
     // If any column is empty, no solution exists
@@ -138,26 +141,25 @@ fn solve_recursive<T: Clone>(
             continue;
         }
         
-        // Add this row's label to the solution
-        solution.push(labels[row].clone());
+        let current_label = labels[row].clone();
         
         // Reduce the matrix by selecting this row
-        let (reduced_labels, reduced_matrix) = select_row(labels, matrix, row);
+        let (reduced_labels, reduced_matrix) = remove_row_and_covered_columns(labels, matrix, row);
         
         // Recursively solve the reduced problem
         let mut reduced_labels_owned = reduced_labels;
         let mut reduced_matrix_owned = reduced_matrix;
         
-        let sub_solutions = solve_recursive(
+        let tail_solutions = solve_recursive(
             &mut reduced_labels_owned,
             &mut reduced_matrix_owned,
-            solution,
         );
         
-        all_solutions.extend(sub_solutions);
-        
-        // Backtrack
-        solution.pop();
+        // Prepend current label to each tail solution
+        for mut tail in tail_solutions {
+            tail.push_front(current_label.clone());
+            all_solutions.push(tail);
+        }
     }
     
     all_solutions
@@ -183,7 +185,7 @@ fn choose_column(matrix: &Array2<bool>) -> usize {
 }
 
 /// Select a row and reduce the matrix accordingly using ndarray's select method
-fn select_row<T: Clone>(
+fn remove_row_and_covered_columns<T: Clone>(
     labels: &Array1<T>,
     matrix: &Array2<bool>,
     selected_row: usize,
@@ -217,9 +219,10 @@ fn select_row<T: Clone>(
     
     // Use select to create new arrays
     let new_labels = labels.select(Axis(0), &remaining_rows);
-    let temp_matrix = matrix.select(Axis(0), &remaining_rows);
-    let new_matrix = temp_matrix.select(Axis(1), &remaining_cols);
-    
+    let new_matrix = matrix
+        .select(Axis(0), &remaining_rows)
+        .select(Axis(1), &remaining_cols);
+
     (new_labels, new_matrix)
 }
 
@@ -363,6 +366,49 @@ mod tests {
         assert_eq!(solution_set, expected_sorted);
     }
 
+// This test is drawn verbatim from Wikipedia's Algorithm X page
+    // https://en.wikipedia.org/wiki/Knuth%27s_Algorithm_X#Example
+    #[test]
+    fn test_exact_cover_with_many_solutions() {
+        // Create universe with elements [1, 2, 3, 4, 5, 6, 7]
+        let universe = Universe::new(vec![1, 2, 3, 4, 5, 6, 7]);
+        
+        // Subsets with string labels:
+        // A = [1, 4, 7], B = [1, 4], C = [4, 5, 7], 
+        // D = [3, 5, 6], E = [2, 3, 6, 7], F = [2, 7]
+        let subsets = vec![
+            vec![1, 4, 7],    // A
+            vec![1, 4],       // B
+            vec![4, 5, 7],    // C
+            vec![3, 5, 6],    // D
+            vec![1, 2, 3, 6, 7], // E
+            vec![2, 7],       // F
+        ];
+        
+        let labels = vec![
+            "A".to_string(),
+            "B".to_string(), 
+            "C".to_string(),
+            "D".to_string(),
+            "E".to_string(),
+            "F".to_string()
+        ];
+        
+        let solution = universe.solve(&labels, &subsets);
+        assert!(solution.is_some());
+        
+        let sol = solution.unwrap();
+        assert!(!sol.solutions.is_empty());
+        let mut solution_set = sol.solutions[0].clone();
+        solution_set.sort();
+        
+        let expected = vec!["B".to_string(), "D".to_string(), "F".to_string()];
+        let mut expected_sorted = expected;
+        expected_sorted.sort();
+        
+        assert_eq!(solution_set, expected_sorted);
+    }
+
     #[test]
     fn test_exact_cover_with_one_subset_with_everything() {
         // Create universe with elements [1, 2, 3, 4, 5, 6, 7]
@@ -391,46 +437,5 @@ mod tests {
         
         assert_eq!(solution_set, expected);
     }
-/*
-    // This test is drawn verbatim from Wikipedia's Algorithm X page
-    // https://en.wikipedia.org/wiki/Knuth%27s_Algorithm_X#Example
-    #[test]
-    fn test_exact_cover_with_string_subsets() {
-        // Create universe with elements [1, 2, 3, 4, 5, 6, 7]
-        let universe = Universe::new(vec![1, 2, 3, 4, 5, 6, 7]);
-        
-        // Subsets with string labels:
-        // A = [1, 4, 7], B = [1, 4], C = [4, 5, 7], 
-        // D = [3, 5, 6], E = [2, 3, 6, 7], F = [2, 7]
-        let subsets = vec![
-            vec![1, 4, 7],    // A
-            vec![1, 4],       // B
-            vec![4, 5, 7],    // C
-            vec![3, 5, 6],    // D
-            vec![1, 2, 3, 6, 7], // E
-            vec![2, 7],       // F
-        ];
-        
-        let labels = vec![
-            "A".to_string(),
-            "B".to_string(), 
-            "C".to_string(),
-            "D".to_string(),
-            "E".to_string(),
-            "F".to_string()
-        ];
 
-        let expected0 = vec!["B".to_string(), "D".to_string(), "F".to_string()];
-        let expected1 = vec!["A".to_string(), "C".to_string()];
-
-
-        let solution = universe.solve(&labels, &subsets);
-        assert!(solution.is_some());
-        let sol = solution.unwrap();
-        assert_eq!(sol.solutions.len(), 2);
-        
-        assert!(sol.solutions.iter().any(|s| *s == expected0));
-        assert!(sol.solutions.iter().any(|s| *s == expected1));
-    }
-*/
 }
