@@ -45,13 +45,12 @@ where
         let mut working_labels = labels_array;
         let mut working_matrix = matrix;
         let mut solution = Vec::new();
-        let mut all_solutions = Vec::new();
         
-        solve_recursive(&mut working_labels, &mut working_matrix, &mut solution, &mut all_solutions);
-        if all_solutions.is_empty() {
+        let solutions = solve_recursive(&mut working_labels, &mut working_matrix, &mut solution);
+        if solutions.is_empty() {
             None
         } else {
-            Some(Solution::new(all_solutions))
+            Some(Solution::new(solutions))
         }
     }
 }
@@ -95,13 +94,12 @@ pub fn solve_matrix<L: Clone>(
     let mut working_labels = subset_labels.to_owned();
     let mut working_matrix = matrix.to_owned();
     let mut solution = Vec::new();
-    let mut all_solutions = Vec::new();
     
-    solve_recursive(&mut working_labels, &mut working_matrix, &mut solution, &mut all_solutions);
-    if all_solutions.is_empty() {
+    let solutions = solve_recursive(&mut working_labels, &mut working_matrix, &mut solution);
+    if solutions.is_empty() {
         None
     } else {
-        Some(Solution::new(all_solutions))
+        Some(Solution::new(solutions))
     }
 }
 
@@ -109,12 +107,10 @@ fn solve_recursive<T: Clone>(
     labels: &mut Array1<T>,
     matrix: &mut Array2<bool>,
     solution: &mut Vec<T>,
-    all_solutions: &mut Vec<Vec<T>>,
-) {
+) -> Vec<Vec<T>> {
     // If matrix is empty, we found a solution
     if matrix.ncols() == 0 {
-        all_solutions.push(solution.clone());
-        return;
+        return vec![solution.clone()];
     }
     
     // If any column is empty, no solution exists
@@ -127,12 +123,14 @@ fn solve_recursive<T: Clone>(
             }
         }
         if !has_true {
-            return;
+            return Vec::new();
         }
     }
     
     // Choose column with minimum number of 1s (heuristic)
     let chosen_col = choose_column(&matrix);
+    
+    let mut all_solutions = Vec::new();
     
     // Try each row that has a 1 in the chosen column
     for row in 0..matrix.nrows() {
@@ -150,16 +148,19 @@ fn solve_recursive<T: Clone>(
         let mut reduced_labels_owned = reduced_labels;
         let mut reduced_matrix_owned = reduced_matrix;
         
-        solve_recursive(
+        let sub_solutions = solve_recursive(
             &mut reduced_labels_owned,
             &mut reduced_matrix_owned,
             solution,
-            all_solutions,
         );
+        
+        all_solutions.extend(sub_solutions);
         
         // Backtrack
         solution.pop();
     }
+    
+    all_solutions
 }
 
 /// Choose the column with the minimum number of 1s (Knuth's heuristic)
@@ -391,7 +392,6 @@ mod tests {
         assert_eq!(solution_set, expected);
     }
 /*
-
     // This test is drawn verbatim from Wikipedia's Algorithm X page
     // https://en.wikipedia.org/wiki/Knuth%27s_Algorithm_X#Example
     #[test]
@@ -431,6 +431,6 @@ mod tests {
         
         assert!(sol.solutions.iter().any(|s| *s == expected0));
         assert!(sol.solutions.iter().any(|s| *s == expected1));
- */
     }
+*/
 }
