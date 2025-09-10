@@ -61,6 +61,9 @@ where
 
 /// Solutions containing multiple possible combinations of selected subset labels
 #[derive(Debug, Clone, PartialEq)]
+
+// Exact Cover might be more properly represented as a Vec<HashSet<L>>, because the elements of a solution have no intrinsic order.
+// But if we are going to reuse this code for Letter Boxed, order will matter.
 pub struct Solutions<L>(pub Vec<Vec<L>>);
 
 impl<L> Solutions<L> {
@@ -279,6 +282,10 @@ mod tests {
     use super::*;
     use ndarray::{array, Array2};
 
+    fn string_labels(strs: &[&str]) -> Vec<String> {
+        strs.iter().map(|s| s.to_string()).collect()
+    }
+
     #[test]
     fn test_simple_exact_cover() {
         // Simple exact cover problem from Wikipedia example
@@ -325,7 +332,8 @@ mod tests {
 
     #[test]
     fn test_string_labels() {
-        let labels = array!["A".to_string(), "B".to_string(), "C".to_string()];
+        let labels_vec = string_labels(&["A", "B", "C"]);
+        let labels = Array1::from_vec(labels_vec);
         let matrix = array![
             [true, false, false],
             [false, true, false],
@@ -359,14 +367,7 @@ mod tests {
             vec![2, 7],       // F
         ];
         
-        let labels = vec![
-            "A".to_string(),
-            "B".to_string(), 
-            "C".to_string(),
-            "D".to_string(),
-            "E".to_string(),
-            "F".to_string()
-        ];
+        let labels = string_labels(&["A", "B", "C", "D", "E", "F"]);
         
         let solution = universe.solve(&labels, &subsets);
         assert!(solution.is_some());
@@ -376,7 +377,7 @@ mod tests {
         let mut solution_set = sol[0].clone();
         solution_set.sort();
         
-        let expected = vec!["B".to_string(), "D".to_string(), "F".to_string()];
+        let expected = string_labels(&["B", "D", "F"]);
         let mut expected_sorted = expected;
         expected_sorted.sort();
         
@@ -396,21 +397,16 @@ mod tests {
             vec![7],         // E
         ];
         
-        let labels = vec![
-            "A".to_string(),
-            "B".to_string(), 
-            "C".to_string(),
-            "D".to_string(),
-            "E".to_string(),
-        ];
+        let labels = string_labels(&["A", "B", "C", "D", "E"]);
         
         let solutions = universe.solve(&labels, &subsets);
         assert!(solutions.is_some());
         let sol = solutions.unwrap().0;
         
         assert!(sol.len() == 2); // There should be two distinct solutions
-        let expected0 = vec!["E".to_string(), "A".to_string(), "B".to_string()];
-        let expected1 = vec!["E".to_string(), "C".to_string(), "D".to_string()];
+        // In both cases we get "E" first because it has the rarest element (7)
+        let expected0 = string_labels(&["E", "A", "B"]);
+        let expected1 = string_labels(&["E", "C", "D"]);
 
         assert!(sol.contains(&expected0));
         assert!(sol.contains(&expected1));
@@ -428,11 +424,7 @@ mod tests {
             vec![4, 5, 7],    // C
         ];
         
-        let labels = vec![
-            "A".to_string(),
-            "B".to_string(), 
-            "C".to_string(),
-        ];
+        let labels = string_labels(&["A", "B", "C"]);
         
         let solution = universe.solve(&labels, &subsets);
         assert!(solution.is_some());
@@ -441,7 +433,7 @@ mod tests {
         assert!(!sol.is_empty());
         let solution_set = sol[0].clone();
         
-        let expected = vec!["A".to_string()];
+        let expected = string_labels(&["A"]);
         
         assert_eq!(solution_set, expected);
     }
