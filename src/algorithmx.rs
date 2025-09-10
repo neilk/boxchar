@@ -25,7 +25,7 @@ where
     /// 
     /// # Returns
     /// * `Some(Solution)` if a solution exists, `None` otherwise
-    pub fn solve<L>(&self, subset_labels: &[L], subsets: &[Vec<T>]) -> Option<Solution<L>>
+    pub fn solve<L>(&self, subset_labels: &[L], subsets: &[Vec<T>]) -> Option<Solutions<L>>
     where
         L: Clone,
     {
@@ -34,7 +34,7 @@ where
         }
         
         if subsets.is_empty() || self.elements.is_empty() {
-            return Some(Solution::new(vec![Vec::new()]));
+            return Some(Solutions::new(vec![Vec::new()]));
         }
         
         // Create the matrix representation
@@ -52,18 +52,18 @@ where
             let vec_solutions: Vec<Vec<L>> = solutions.into_iter()
                 .map(|deque| deque.into_iter().collect())
                 .collect();
-            Some(Solution::new(vec_solutions))
+            Some(Solutions::new(vec_solutions))
         }
     }
 }
 
 /// Solutions containing multiple possible combinations of selected subset labels
 #[derive(Debug, Clone, PartialEq)]
-pub struct Solution<L> {
+pub struct Solutions<L> {
     pub solutions: Vec<Vec<L>>,
 }
 
-impl<L> Solution<L> {
+impl<L> Solutions<L> {
     pub fn new(solutions: Vec<Vec<L>>) -> Self {
         Self { solutions }
     }
@@ -80,7 +80,7 @@ impl<L> Solution<L> {
 pub fn solve_matrix<L: Clone>(
     subset_labels: ArrayView1<L>,
     matrix: ArrayView2<bool>,
-) -> Option<Solution<L>> {
+) -> Option<Solutions<L>> {
     let rows = matrix.nrows();
     let cols = matrix.ncols();
     
@@ -89,7 +89,7 @@ pub fn solve_matrix<L: Clone>(
     }
     
     if rows == 0 || cols == 0 {
-        return Some(Solution::new(vec![Vec::new()]));
+        return Some(Solutions::new(vec![Vec::new()]));
     }
     
     // Convert to working arrays
@@ -103,7 +103,7 @@ pub fn solve_matrix<L: Clone>(
         let vec_solutions: Vec<Vec<L>> = solutions.into_iter()
             .map(|deque| deque.into_iter().collect())
             .collect();
-        Some(Solution::new(vec_solutions))
+        Some(Solutions::new(vec_solutions))
     }
 }
 
