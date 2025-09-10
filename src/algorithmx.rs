@@ -2,6 +2,7 @@ use ndarray::{Array1, Array2, ArrayView1, ArrayView2, Axis};
 use std::collections::{HashMap, VecDeque};
 use std::fmt::Display;
 
+
 /// Universe containing elements that need to be covered exactly once
 #[derive(Debug, Clone)]
 pub struct Universe<T> {
@@ -81,7 +82,7 @@ impl<L: Display> Display for Solutions<L> {
             })
             .collect();
         
-        write!(f, "{}", solution_strings.join("\n"))
+        write!(f, "{}", solution_strings.join(", "))
     }
 }
 
@@ -382,23 +383,17 @@ mod tests {
         assert_eq!(solution_set, expected_sorted);
     }
 
-// This test is drawn verbatim from Wikipedia's Algorithm X page
-    // https://en.wikipedia.org/wiki/Knuth%27s_Algorithm_X#Example
     #[test]
     fn test_exact_cover_with_many_solutions() {
         // Create universe with elements [1, 2, 3, 4, 5, 6, 7]
         let universe = Universe::new(vec![1, 2, 3, 4, 5, 6, 7]);
         
-        // Subsets with string labels:
-        // A = [1, 4, 7], B = [1, 4], C = [4, 5, 7], 
-        // D = [3, 5, 6], E = [2, 3, 6, 7], F = [2, 7]
         let subsets = vec![
-            vec![1, 4, 7],    // A
-            vec![1, 4],       // B
-            vec![4, 5, 7],    // C
-            vec![3, 5, 6],    // D
-            vec![1, 2, 3, 6, 7], // E
-            vec![2, 7],       // F
+            vec![1, 2, 3],    // A
+            vec![4, 5, 6],    // B
+            vec![1, 3, 5],    // C
+            vec![2, 4, 6],    // D
+            vec![7],         // E
         ];
         
         let labels = vec![
@@ -407,22 +402,21 @@ mod tests {
             "C".to_string(),
             "D".to_string(),
             "E".to_string(),
-            "F".to_string()
         ];
         
-        let solution = universe.solve(&labels, &subsets);
-        assert!(solution.is_some());
+        let solutions = universe.solve(&labels, &subsets);
+        assert!(solutions.is_some());
+        let sol = solutions.unwrap();
         
-        let sol = solution.unwrap();
-        assert!(!sol.0.is_empty());
-        let mut solution_set = sol.0[0].clone();
-        solution_set.sort();
-        
-        let expected = vec!["B".to_string(), "D".to_string(), "F".to_string()];
-        let mut expected_sorted = expected;
-        expected_sorted.sort();
-        
-        assert_eq!(solution_set, expected_sorted);
+        //assert!(sol.len() == 2); // There should be two distinct solutions
+
+        assert!(sol.0.len() == 2); // There should be two distinct solutions
+        let expected0 = vec!["E".to_string(), "A".to_string(), "B".to_string()];
+        let expected1 = vec!["E".to_string(), "C".to_string(), "D".to_string()];
+
+        assert!(sol.0.contains(&expected0));
+        assert!(sol.0.contains(&expected1));
+
     }
 
     #[test]
