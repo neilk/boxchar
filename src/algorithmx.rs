@@ -60,19 +60,17 @@ where
 
 /// Solutions containing multiple possible combinations of selected subset labels
 #[derive(Debug, Clone, PartialEq)]
-pub struct Solutions<L> {
-    pub solutions: Vec<Vec<L>>,
-}
+pub struct Solutions<L>(pub Vec<Vec<L>>);
 
 impl<L> Solutions<L> {
     pub fn new(solutions: Vec<Vec<L>>) -> Self {
-        Self { solutions }
+        Self(solutions)
     }
 }
 
 impl<L: Display> Display for Solutions<L> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let solution_strings: Vec<String> = self.solutions
+        let solution_strings: Vec<String> = self.0
             .iter()
             .map(|solution| {
                 solution
@@ -297,7 +295,7 @@ mod tests {
         assert!(solution.is_some());
         let sol = solution.unwrap();
         // Should find a valid solution
-        assert!(!sol.solutions.is_empty());
+        assert!(!sol.0.is_empty());
     }
 
     #[test]
@@ -320,8 +318,8 @@ mod tests {
         let solution = solve_matrix(labels.view(), matrix.view());
         assert!(solution.is_some());
         let sol = solution.unwrap();
-        assert_eq!(sol.solutions.len(), 1);
-        assert!(sol.solutions[0].is_empty());
+        assert_eq!(sol.0.len(), 1);
+        assert!(sol.0[0].is_empty());
     }
 
     #[test]
@@ -336,8 +334,8 @@ mod tests {
         let solution = solve_matrix(labels.view(), matrix.view());
         assert!(solution.is_some());
         let sol = solution.unwrap();
-        assert!(!sol.solutions.is_empty());
-        assert_eq!(sol.solutions[0].len(), 3);
+        assert!(!sol.0.is_empty());
+        assert_eq!(sol.0[0].len(), 3);
     }
 
 
@@ -373,8 +371,8 @@ mod tests {
         assert!(solution.is_some());
         
         let sol = solution.unwrap();
-        assert!(!sol.solutions.is_empty());
-        let mut solution_set = sol.solutions[0].clone();
+        assert!(!sol.0.is_empty());
+        let mut solution_set = sol.0[0].clone();
         solution_set.sort();
         
         let expected = vec!["B".to_string(), "D".to_string(), "F".to_string()];
@@ -416,8 +414,8 @@ mod tests {
         assert!(solution.is_some());
         
         let sol = solution.unwrap();
-        assert!(!sol.solutions.is_empty());
-        let mut solution_set = sol.solutions[0].clone();
+        assert!(!sol.0.is_empty());
+        let mut solution_set = sol.0[0].clone();
         solution_set.sort();
         
         let expected = vec!["B".to_string(), "D".to_string(), "F".to_string()];
@@ -448,8 +446,8 @@ mod tests {
         assert!(solution.is_some());
         
         let sol = solution.unwrap();
-        assert!(!sol.solutions.is_empty());
-        let solution_set = sol.solutions[0].clone();
+        assert!(!sol.0.is_empty());
+        let solution_set = sol.0[0].clone();
         
         let expected = vec!["A".to_string()];
         
