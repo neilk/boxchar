@@ -1,3 +1,4 @@
+pub mod algorithmx;
 pub mod game;
 pub mod wordlist;
 pub mod solver;

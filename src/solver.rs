@@ -24,7 +24,6 @@ impl fmt::Display for Solution {
 
 pub struct Solver {
     game: Game,
-    wordlist: Wordlist,
     possible_words: Vec<String>,
 }
 
@@ -33,7 +32,6 @@ impl Solver {
         let possible_words = game.possible_words(&wordlist);
         Solver {
             game,
-            wordlist,
             possible_words,
         }
     }
