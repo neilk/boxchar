@@ -294,9 +294,9 @@ mod tests {
         
         let solution = solve_matrix(labels.view(), matrix.view());
         assert!(solution.is_some());
-        let sol = solution.unwrap();
+        let sol = solution.unwrap().0;
         // Should find a valid solution
-        assert!(!sol.0.is_empty());
+        assert!(!sol.is_empty());
     }
 
     #[test]
@@ -318,9 +318,9 @@ mod tests {
         
         let solution = solve_matrix(labels.view(), matrix.view());
         assert!(solution.is_some());
-        let sol = solution.unwrap();
-        assert_eq!(sol.0.len(), 1);
-        assert!(sol.0[0].is_empty());
+        let sol = solution.unwrap().0;
+        assert_eq!(sol.len(), 1);
+        assert!(sol[0].is_empty());
     }
 
     #[test]
@@ -334,9 +334,9 @@ mod tests {
         
         let solution = solve_matrix(labels.view(), matrix.view());
         assert!(solution.is_some());
-        let sol = solution.unwrap();
-        assert!(!sol.0.is_empty());
-        assert_eq!(sol.0[0].len(), 3);
+        let sol = solution.unwrap().0;
+        assert!(!sol.is_empty());
+        assert_eq!(sol[0].len(), 3);
     }
 
 
@@ -371,9 +371,9 @@ mod tests {
         let solution = universe.solve(&labels, &subsets);
         assert!(solution.is_some());
         
-        let sol = solution.unwrap();
-        assert!(!sol.0.is_empty());
-        let mut solution_set = sol.0[0].clone();
+        let sol = solution.unwrap().0;
+        assert!(!sol.is_empty());
+        let mut solution_set = sol[0].clone();
         solution_set.sort();
         
         let expected = vec!["B".to_string(), "D".to_string(), "F".to_string()];
@@ -406,16 +406,14 @@ mod tests {
         
         let solutions = universe.solve(&labels, &subsets);
         assert!(solutions.is_some());
-        let sol = solutions.unwrap();
+        let sol = solutions.unwrap().0;
         
-        //assert!(sol.len() == 2); // There should be two distinct solutions
-
-        assert!(sol.0.len() == 2); // There should be two distinct solutions
+        assert!(sol.len() == 2); // There should be two distinct solutions
         let expected0 = vec!["E".to_string(), "A".to_string(), "B".to_string()];
         let expected1 = vec!["E".to_string(), "C".to_string(), "D".to_string()];
 
-        assert!(sol.0.contains(&expected0));
-        assert!(sol.0.contains(&expected1));
+        assert!(sol.contains(&expected0));
+        assert!(sol.contains(&expected1));
 
     }
 
@@ -439,9 +437,9 @@ mod tests {
         let solution = universe.solve(&labels, &subsets);
         assert!(solution.is_some());
         
-        let sol = solution.unwrap();
-        assert!(!sol.0.is_empty());
-        let solution_set = sol.0[0].clone();
+        let sol = solution.unwrap().0;
+        assert!(!sol.is_empty());
+        let solution_set = sol[0].clone();
         
         let expected = vec!["A".to_string()];
         
