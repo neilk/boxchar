@@ -1,5 +1,6 @@
 use ndarray::{Array1, Array2, ArrayView1, ArrayView2, Axis};
 use std::collections::{HashMap, VecDeque};
+use std::fmt::Display;
 
 /// Universe containing elements that need to be covered exactly once
 #[derive(Debug, Clone)]
@@ -66,6 +67,23 @@ pub struct Solutions<L> {
 impl<L> Solutions<L> {
     pub fn new(solutions: Vec<Vec<L>>) -> Self {
         Self { solutions }
+    }
+}
+
+impl<L: Display> Display for Solutions<L> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let solution_strings: Vec<String> = self.solutions
+            .iter()
+            .map(|solution| {
+                solution
+                    .iter()
+                    .map(|item| item.to_string())
+                    .collect::<Vec<_>>()
+                    .join("-")
+            })
+            .collect();
+        
+        write!(f, "{}", solution_strings.join("\n"))
     }
 }
 
