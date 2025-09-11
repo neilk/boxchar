@@ -43,7 +43,6 @@ impl Word {
     }
 }
 
-// Universe containing elements that need to be covered
 #[derive(Debug, Clone)]
 pub struct Game {
     letters: HashMap<Letter, usize>, // Map letter to column index in the matrix
@@ -76,52 +75,51 @@ impl Game {
 
         Game {
             letters: letters_hashmap, 
-            words: words_vec_words 
+            words: words_vec_words,
+        }
+    }
+
+
+}
+
+fn create_matrix(letters: &HashMap<Letter, usize>, words: &[Word]) -> Array2<bool> {
+    let row_count = words.len();
+    let col_count = letters.len();
+    let mut matrix = Array2::from_elem((row_count, col_count), false);
+
+    for (row, word) in words.iter().enumerate() {
+        for letter in &word.0 {
+            if let Some(&col) = letters.get(letter) {
+                matrix[[row, col]] = true;
+            }
         }
     }
     
-    pub fn solve(&self) -> Option<Solutions>
-    {        
-        if self.words.is_empty() || self.letters.is_empty() {
-            return Some(Solutions::empty());
-        }
-        
-        // Create the matrix representation
-        let matrix = self.create_matrix();
-        let labels_array = Array1::from(self.words.iter().cloned().collect::<Vec<_>>());
+    matrix
+}
 
-        // Convert to working arrays
-        let deques = solve_recursive(&labels_array, &matrix);
-        if deques.is_empty() {
-            None
-        } else {
-            let solutions = deques.into_iter()
-                .map(|deque| deque.into_iter().collect())
-                .map(Solution::new)
-                .collect();
-
-            Some(Solutions::new(solutions))
-        }
+pub fn solve(game: &Game) -> Option<Solutions> {        
+    if game.words.is_empty() || game.letters.is_empty() {
+        return Some(Solutions::empty());
     }
+    
+    // Create the matrix representation
+    let matrix = create_matrix(&game.letters, &game.words);
+    let words_array1 = Array1::from(game.words.clone());
 
-    pub fn create_matrix(&self) -> Array2<bool> {
-        let row_count = self.words.len();
-        let col_count = self.letters.len();
-        let mut matrix = Array2::from_elem((row_count, col_count), false);
+    // Get the solutions, which will be an exotic type. We will convert it to Solutions
+    let deques = solve_recursive(&words_array1, &matrix);
+    if deques.is_empty() {
+        None
+    } else {
+        let solutions = deques.into_iter()
+            .map(|deque| deque.into_iter().collect())
+            .map(Solution::new)
+            .collect();
 
-        for (row, word) in self.words.iter().enumerate() {
-            for letter in &word.0 {
-                if let Some(&col) = &self.letters.get(letter) {
-                    matrix[[row, col]] = true;
-                }
-            }
-        }
-        
-        matrix
+        Some(Solutions::new(solutions))
+    }
 }
-}
-
-
 
 // A solution containing a single combination of selected words. Glorified word vector
 #[derive(Debug, Clone, PartialEq)]
