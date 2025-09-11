@@ -1,0 +1,464 @@
+use ndarray::{Array1, Array2, ArrayView1, ArrayView2, Axis};
+use std::collections::{HashMap, HashSet, VecDeque};
+use std::fmt::Display;
+use std::hash::Hash;
+use bitvec::prelude::*;
+
+
+
+#[derive(Debug, Clone, Copy, Eq, Hash)]
+struct Letter(u8); // 0-25 for A-Z
+
+impl Letter {
+    fn new(c: char) -> Option<Self> {
+        if c.is_ascii_alphabetic() {
+            Some(Letter((c.to_ascii_uppercase() as u8) - b'A'))
+        } else {
+            None
+        }
+    }
+
+    fn to_char(self) -> char {
+        (self.0 + b'A') as char
+    }
+}
+
+#[derive(Debug, Clone)]
+struct Word(Vec<Letter>);
+impl Word {
+    fn from_str(s: &str) -> Option<Self> {
+        let mut letters = Vec::new();
+        for c in s.chars() {
+            if let Some(letter) = Letter::new(c) {
+                letters.push(letter);
+            } else {
+                return None; // Invalid character
+            }
+        }
+        Some(Word(letters))
+    }
+
+    fn to_string(&self) -> String {
+        self.0.iter().map(|l| l.to_char()).collect()
+    }
+}
+
+// Universe containing elements that need to be covered
+#[derive(Debug, Clone)]
+pub struct Game {
+    letters: HashMap<Letter, usize>, // Map letter to column index in the matrix
+    words: Vec<Word>,
+}
+
+impl Game {
+    pub fn new(letters: String, words: Vec<String>) -> Self {
+        let letters_hashmap: HashMap<Letter, usize> = letters
+            .chars()
+            .filter_map(|c| Letter::new(c))
+            .enumerate()
+            .map(|(i, letter)| (letter, i))    
+            .collect();
+
+        // Convert words to Vec<Vec<Letter>>
+        let words_vec_words: Vec<Word> = words.iter()
+            .filter(|word| {
+                // Filter out words that contain letters not in the universe
+                word.chars().all(|c| {
+                    if let Some(letter) = Letter::new(c) {
+                        letters_hashmap.contains_key(&letter)
+                    } else {
+                        false
+                    }
+                })
+            })
+            .map(|word| Word::from_str(word).unwrap()) // Safe unwrap due to filter above
+            .collect();
+
+        Game {
+            letters: letters_hashmap, 
+            words: words_vec_words 
+        }
+    }
+    
+    pub fn solve(&self) -> Option<Solutions>
+    {        
+        if self.words.is_empty() || self.letters.is_empty() {
+            return Some(Solutions::empty());
+        }
+        
+        // Create the matrix representation
+        let matrix = self.create_matrix();
+        let labels_array = Array1::from(self.words.iter().cloned().collect::<Vec<_>>());
+
+        // Convert to working arrays
+        let deques = solve_recursive(&labels_array, &matrix);
+        if deques.is_empty() {
+            None
+        } else {
+            let solutions = deques.into_iter()
+                .map(|deque| deque.into_iter().collect())
+                .map(Solution::new)
+                .collect();
+
+            Some(Solutions::new(solutions))
+        }
+    }
+
+    pub fn create_matrix(&self) -> Array2<bool> {
+        let row_count = self.words.len();
+        let col_count = self.letters.len();
+        let mut matrix = Array2::from_elem((row_count, col_count), false);
+
+        for (row, word) in self.words.iter().enumerate() {
+            for letter in &word.0 {
+                if let Some(&col) = &self.letters.get(letter) {
+                    matrix[[row, col]] = true;
+                }
+            }
+        }
+        
+        matrix
+}
+}
+
+
+
+// A solution containing a single combination of selected words. Glorified word vector
+#[derive(Debug, Clone, PartialEq)]
+pub struct Solution (pub Vec<String>); 
+impl Solution {
+    pub fn new(solution: Vec<String>) -> Self {
+        Self(solution)
+    }
+}
+
+impl Display for Solution {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let solution_string = self.0
+            .iter()
+            .map(|item| item.to_string())
+            .collect::<Vec<_>>()
+            .join("-");
+        write!(f, "{}", solution_string)
+    }
+}
+
+/// Solutions containing multiple possible combinations of selected words. Glorified vector of word vectors
+#[derive(Debug, Clone, PartialEq)]
+pub struct Solutions(pub Vec<Solution>);
+
+impl Solutions {
+    pub fn new(solutions: Vec<Solution>) -> Self {
+        Self(solutions)
+    }
+
+    // Convenience method to create an empty solution set
+    pub fn empty() -> Self {
+        Self::new(vec![Solution::new(vec![])])
+    }
+}
+
+impl Display for Solutions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let solution_strings: Vec<String> = self.0
+            .iter()
+            .map(|solution| {
+                solution.to_string()
+            })
+            .collect();
+        
+        write!(f, "{}", solution_strings.join("\n"))
+    }
+}
+
+fn solve_recursive(
+    words: &Array1<Word>,
+    matrix: &Array2<bool>,
+) -> Vec<VecDeque<String>> {
+    let mut solutions = Vec::new();
+
+    // If matrix is empty, the caller found a solution!
+    // We indicate to our callers that we found a solution by returning a Vec with one empty VecDeque
+    if matrix.ncols() == 0 {
+        solutions.push(VecDeque::new());
+        return solutions;
+    }
+    
+    // If any column is empty, no solution exists
+    for col in 0..matrix.ncols() {
+        let mut has_true = false;
+        for row in 0..matrix.nrows() {
+            if matrix[[row, col]] {
+                has_true = true;
+                break;
+            }
+        }
+        if !has_true {
+            return Vec::new();
+        }
+    }
+    
+    // Choose letter which is the most infrequent (heuristic)
+    let chosen_col = choose_column_with_rarest_letter(&matrix);
+    
+    
+    // Iterate over all word rows and recurse
+    for row in 0..matrix.nrows() {
+        if !matrix[[row, chosen_col]] {
+            continue;
+        }
+        
+        let current_label = words[row].clone();
+        
+        // Given the current word we are considering, 
+        // reduce the matrix of remaining words accordingly for this recursive path. 
+        let (reduced_words, reduced_matrix) = reduce_to_interesting(words, matrix, row);
+
+        let tail_solutions = solve_recursive(
+            &reduced_words,
+            &reduced_matrix,
+        );
+        
+        // Prepend current label to each tail solution
+        for mut tail in tail_solutions {
+            tail.push_front(current_label.clone());
+            solutions.push(tail);
+        }
+    }
+    
+    solutions
+}
+
+/// Choose the column with the minimum number of 1s (Knuth's heuristic)
+fn choose_column_with_rarest_letter(matrix: &Array2<bool>) -> usize {
+    let mut min_count = matrix.nrows() + 1;
+    let mut chosen_col = 0;
+    
+    for col in 0..matrix.ncols() {
+        let count = (0..matrix.nrows())
+            .map(|row| if matrix[[row, col]] { 1 } else { 0 })
+            .sum::<usize>();
+        
+        if count < min_count {
+            min_count = count;
+            chosen_col = col;
+        }
+    }
+    
+    chosen_col
+}
+
+/// As we recurse down a particular path, we can reduce the matrix to 
+/// horizontally: remove letters we already have covered
+/// vertically: remove words that don't seem to add much to letters we're going to cover.
+fn reduce_to_interesting<T: Clone>(
+    words: &Array1<T>,
+    matrix: &Array2<bool>,
+    selected_row: usize,
+) -> (Array1<T>, Array2<bool>) {
+    // Find letters (cols) that are covered by the selected row
+    let mut covered_mask = bitvec![0; matrix.ncols()];
+    for col in 0..matrix.ncols() {
+        if matrix[[selected_row, col]] {
+            covered_mask.set(col, true);
+        }
+    }
+
+    // Find (words) that are mostly or entirely covered by the existing row
+    // The selected row should have zero unconvered letters. So we do not need to special case it. I think.
+    let mut covered_or_mostly_covered_rows = Vec::new();
+    let min_uncovered_count = 2; // We might want to tune this based on how many letters remain to cover?;
+    for row in 0..matrix.nrows() {
+        let uncovered_count = matrix.row(row)
+            .iter()
+            .enumerate()
+            .filter(|&(col, &is_true)| !covered_mask[col] && is_true)
+            .count();
+
+        if uncovered_count < min_uncovered_count {
+            covered_or_mostly_covered_rows.push(row);
+        }
+    }
+    
+    // Create indices for remaining rows and columns
+    let remaining_rows: Vec<_> = (0..matrix.nrows())
+        .filter(|&row| !covered_or_mostly_covered_rows.contains(&row))
+        .collect();
+    let remaining_cols: Vec<_> = (0..matrix.ncols())
+        .filter(|&col| !covered_mask[col])
+        .collect();
+    
+    // Use select to create new arrays for labels and the matrix. 
+    // The .select method avoids copying!
+    let new_words = words.select(Axis(0), &remaining_rows);
+    let new_matrix = matrix
+        .select(Axis(0), &remaining_rows)
+        .select(Axis(1), &remaining_cols);
+
+    (new_words, new_matrix)
+}
+
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ndarray::{array, Array2};
+
+    fn string_labels(strs: &[&str]) -> Vec<String> {
+        strs.iter().map(|s| s.to_string()).collect()
+    }
+
+    #[test]
+    fn test_simple_exact_cover() {
+        // Simple exact cover problem from Wikipedia example
+        let labels = array![0, 1, 2, 3, 4, 5];
+        let matrix = array![
+            [true, false, false, true, false, false],
+            [true, false, false, true, false, false],
+            [false, false, false, true, true, false],
+            [false, false, true, false, true, true],
+            [false, true, true, false, false, true],
+            [false, true, false, false, false, false]
+        ];
+        
+        let solution = solve_matrix(labels.view(), matrix.view());
+        assert!(solution.is_some());
+        let sol = solution.unwrap().0;
+        // Should find a valid solution
+        assert!(!sol.is_empty());
+    }
+
+    #[test]
+    fn test_no_solution() {
+        let labels = array![0, 1];
+        let matrix = array![
+            [true, false],
+            [true, false]
+        ];
+        
+        let solution = solve_matrix(labels.view(), matrix.view());
+        assert!(solution.is_none());
+    }
+
+    #[test]
+    fn test_empty_matrix() {
+        let labels = Array1::<i32>::zeros(0);
+        let matrix = Array2::<bool>::from_elem((0, 0), false);
+        
+        let solution = solve_matrix(labels.view(), matrix.view());
+        assert!(solution.is_some());
+        let sol = solution.unwrap().0;
+        assert_eq!(sol.len(), 1);
+        assert!(sol[0].is_empty());
+    }
+
+    #[test]
+    fn test_string_labels() {
+        let labels_vec = string_labels(&["A", "B", "C"]);
+        let labels = Array1::from_vec(labels_vec);
+        let matrix = array![
+            [true, false, false],
+            [false, true, false],
+            [false, false, true]
+        ];
+        
+        let solution = solve_matrix(labels.view(), matrix.view());
+        assert!(solution.is_some());
+        let sol = solution.unwrap().0;
+        assert!(!sol.is_empty());
+        assert_eq!(sol[0].len(), 3);
+    }
+
+
+    // This test is drawn verbatim from Wikipedia's Algorithm X page
+    // https://en.wikipedia.org/wiki/Knuth%27s_Algorithm_X#Example
+    #[test]
+    fn test_exact_cover_with_string_subsets() {
+        // Create universe with elements [1, 2, 3, 4, 5, 6, 7]
+        let universe = Game::new(vec![1, 2, 3, 4, 5, 6, 7]);
+        
+        // Subsets with string labels:
+        // A = [1, 4, 7], B = [1, 4], C = [4, 5, 7], 
+        // D = [3, 5, 6], E = [2, 3, 6, 7], F = [2, 7]
+        let subsets = vec![
+            vec![1, 4, 7],    // A
+            vec![1, 4],       // B
+            vec![4, 5, 7],    // C
+            vec![3, 5, 6],    // D
+            vec![2, 3, 6, 7], // E
+            vec![2, 7],       // F
+        ];
+        
+        let labels = string_labels(&["A", "B", "C", "D", "E", "F"]);
+        
+        let solution = universe.solve(&labels, &subsets);
+        assert!(solution.is_some());
+        
+        let sol = solution.unwrap().0;
+        assert!(!sol.is_empty());
+        let mut solution_set = sol[0].clone();
+        solution_set.sort();
+        
+        let expected = string_labels(&["B", "D", "F"]);
+        let mut expected_sorted = expected;
+        expected_sorted.sort();
+        
+        assert_eq!(solution_set, expected_sorted);
+    }
+
+    #[test]
+    fn test_exact_cover_with_many_solutions() {
+        // Create universe with elements [1, 2, 3, 4, 5, 6, 7]
+        let universe = Game::new(vec![1, 2, 3, 4, 5, 6, 7]);
+        
+        let subsets = vec![
+            vec![1, 2, 3],    // A
+            vec![4, 5, 6],    // B
+            vec![1, 3, 5],    // C
+            vec![2, 4, 6],    // D
+            vec![7],         // E
+        ];
+        
+        let labels = string_labels(&["A", "B", "C", "D", "E"]);
+        
+        let solutions = universe.solve(&labels, &subsets);
+        assert!(solutions.is_some());
+        let sol = solutions.unwrap().0;
+        
+        assert!(sol.len() == 2); // There should be two distinct solutions
+        // In both cases we get "E" first because it has the rarest element (7)
+        let expected0 = string_labels(&["E", "A", "B"]);
+        let expected1 = string_labels(&["E", "C", "D"]);
+
+        assert!(sol.contains(&expected0));
+        assert!(sol.contains(&expected1));
+
+    }
+
+    #[test]
+    fn test_exact_cover_with_one_subset_with_everything() {
+        // Create universe with elements [1, 2, 3, 4, 5, 6, 7]
+        let universe = Game::new(vec![1, 2, 3, 4, 5, 6, 7]);
+        
+        let subsets = vec![
+            vec![1, 2, 3, 4, 5, 6, 7],    // A
+            vec![1, 4],       // B
+            vec![4, 5, 7],    // C
+        ];
+        
+        let labels = string_labels(&["A", "B", "C"]);
+        
+        let solution = universe.solve(&labels, &subsets);
+        assert!(solution.is_some());
+        
+        let sol = solution.unwrap().0;
+        assert!(!sol.is_empty());
+        let solution_set = sol[0].clone();
+        
+        let expected = string_labels(&["A"]);
+        
+        assert_eq!(solution_set, expected);
+    }
+
+}

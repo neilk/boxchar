@@ -15,6 +15,7 @@ tempfile = "3.2"
 wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
 js-sys = "0.3"
 web-sys = "0.3"
+bitvec = "1.0.1"
 
 [lib]
 name = "boxchar"
