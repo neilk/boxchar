@@ -1,4 +1,4 @@
-use ndarray::{Array1, Array2, ArrayView1, ArrayView2, Axis};
+use ndarray::{Array1, Array2, Axis};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt::Display;
 use std::hash::Hash;
@@ -275,6 +275,9 @@ fn reduce_to_interesting(
     matrix: &Array2<bool>,
     selected_row: usize,
 ) -> (Array1<Word>, Array2<bool>) {
+    let selected_word = &words[selected_row];
+    let selected_word_last_char = selected_word.0.last().unwrap();
+
     // Find letters (cols) that are covered by the selected row
     let mut covered_mask = bitvec![0; matrix.ncols()];
     for col in 0..matrix.ncols() {
@@ -285,7 +288,7 @@ fn reduce_to_interesting(
 
     // Find (words) that are mostly or entirely covered by the existing row
     // The selected row should have zero unconvered letters. So we do not need to special case it. I think.
-    let mut covered_or_mostly_covered_rows = Vec::new();
+    let mut excluded_rows = Vec::new();
     for row in 0..matrix.nrows() {
         let uncovered_count = matrix.row(row)
             .iter()
@@ -294,13 +297,20 @@ fn reduce_to_interesting(
             .count();
 
         if uncovered_count < MIN_UNCOVERED_COUNT {
-            covered_or_mostly_covered_rows.push(row);
-        }
+            excluded_rows.push(row);
+        } else {
+            // If the word does not start with the last letter of the selected word, exclude it
+            if let Some(first_letter) = words[row].0.first() {
+                if first_letter != selected_word_last_char {
+                    excluded_rows.push(row);
+                }
+            }
+        }   
     }
     
     // Create indices for remaining rows and columns
     let remaining_rows: Vec<_> = (0..matrix.nrows())
-        .filter(|&row| !covered_or_mostly_covered_rows.contains(&row))
+        .filter(|&row| !excluded_rows.contains(&row))
         .collect();
     let remaining_cols: Vec<_> = (0..matrix.ncols())
         .filter(|&col| !covered_mask[col])
@@ -321,21 +331,16 @@ fn reduce_to_interesting(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ndarray::{array, Array2};
 
     #[test]
-    fn test_interesting() {
+    fn test_basic() {
         let game = Game::new(
             "ABCDEF".to_string(),
             vec![
                 "ABCD".to_string(),
-                "BC".to_string(),
-                "CD".to_string(),
-                "DE".to_string(),
-                "EF".to_string(),
-                "FA".to_string(),
+                "DEF".to_string(),
                 "ACE".to_string(),
-                "BDF".to_string(),
+                "EBDF".to_string(),
             ],
         );
         
