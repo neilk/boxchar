@@ -45,17 +45,15 @@ impl Word {
 
 #[derive(Debug, Clone)]
 pub struct Game {
-    letters: HashMap<Letter, usize>, // Map letter to column index in the matrix
+    letters: HashSet<Letter>,
     words: Vec<Word>,
 }
 
 impl Game {
     pub fn new(letters: String, words: Vec<String>) -> Self {
-        let letters_hashmap: HashMap<Letter, usize> = letters
+        let letters_hashset: HashSet<Letter> = letters
             .chars()
             .filter_map(|c| Letter::new(c))
-            .enumerate()
-            .map(|(i, letter)| (letter, i))    
             .collect();
 
         // Convert words to Vec<Vec<Letter>>
@@ -82,9 +80,16 @@ impl Game {
 
 }
 
-fn create_matrix(letters: &HashMap<Letter, usize>, words: &[Word]) -> Array2<bool> {
+fn create_matrix(letters: &HashSet<Letter>, words: &[Word]) -> Array2<bool> {
+    // Assign the letters to arbitrary columns indexes. It doesn't matter what, they just have to have one.
+    let letters_to_cols: HashMap<Letter, usize> = letters
+        .iter()
+        .enumerate()
+        .map(|(i, letter)| (letter, i))    
+        .collect();
+
     let row_count = words.len();
-    let col_count = letters.len();
+    let col_count = letters_to_cols.len();
     let mut matrix = Array2::from_elem((row_count, col_count), false);
 
     for (row, word) in words.iter().enumerate() {
@@ -103,7 +108,6 @@ pub fn solve(game: &Game) -> Option<Solutions> {
         return Some(Solutions::empty());
     }
     
-    // Create the matrix representation
     let matrix = create_matrix(&game.letters, &game.words);
     let words_array1 = Array1::from(game.words.clone());
 
