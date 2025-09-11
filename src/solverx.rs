@@ -9,8 +9,8 @@ const MIN_UNCOVERED_COUNT: usize = 2;
 
 
 
-#[derive(Debug, Clone, Copy, Eq, Hash)]
-struct Letter(u8); // 0-25 for A-Z
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord,Hash)]
+pub struct Letter(u8); // 0-25 for A-Z
 
 impl Letter {
     fn new(c: char) -> Option<Self> {
@@ -26,8 +26,8 @@ impl Letter {
     }
 }
 
-#[derive(Debug, Clone)]
-struct Word(Vec<Letter>);
+#[derive(Debug, Clone, Eq, PartialOrd, Ord, PartialEq, Hash)]
+pub struct Word(Vec<Letter>);
 impl Word {
     fn from_str(s: &str) -> Option<Self> {
         let mut letters = Vec::new();
@@ -65,7 +65,7 @@ impl Game {
                 // Filter out words that contain letters not in the universe
                 word.chars().all(|c| {
                     if let Some(letter) = Letter::new(c) {
-                        letters_hashmap.contains_key(&letter)
+                        letters_hashset.contains(&letter)
                     } else {
                         false
                     }
@@ -75,7 +75,7 @@ impl Game {
             .collect();
 
         Game {
-            letters: letters_hashmap, 
+            letters: letters_hashset, 
             words: words_vec_words,
         }
     }
@@ -84,8 +84,8 @@ impl Game {
 }
 
 fn create_matrix(letters: &HashSet<Letter>, words: &[Word]) -> Array2<bool> {
-    // Assign the letters to arbitrary columns indexes. It doesn't matter what, they just have to have one.
-    let letters_to_cols: HashMap<Letter, usize> = letters
+    // Assign the letters to arbitrary column indexes. It doesn't matter what, they just have to have one.
+    let letters_to_cols: HashMap<&Letter, usize> = letters
         .iter()
         .enumerate()
         .map(|(i, letter)| (letter, i))    
@@ -97,7 +97,7 @@ fn create_matrix(letters: &HashSet<Letter>, words: &[Word]) -> Array2<bool> {
 
     for (row, word) in words.iter().enumerate() {
         for letter in &word.0 {
-            if let Some(&col) = letters.get(letter) {
+            if let Some(&col) = letters_to_cols.get(letter) {
                 matrix[[row, col]] = true;
             }
         }
@@ -106,33 +106,12 @@ fn create_matrix(letters: &HashSet<Letter>, words: &[Word]) -> Array2<bool> {
     matrix
 }
 
-pub fn solve(game: &Game) -> Option<Solutions> {        
-    if game.words.is_empty() || game.letters.is_empty() {
-        return Some(Solutions::empty());
-    }
-    
-    let matrix = create_matrix(&game.letters, &game.words);
-    let words_array1 = Array1::from(game.words.clone());
-
-    // Get the solutions, which will be an exotic type. We will convert it to Solutions
-    let deques = solve_recursive(&words_array1, &matrix);
-    if deques.is_empty() {
-        None
-    } else {
-        let solutions = deques.into_iter()
-            .map(|deque| deque.into_iter().collect())
-            .map(Solution::new)
-            .collect();
-
-        Some(Solutions::new(solutions))
-    }
-}
 
 // A solution containing a single combination of selected words. Glorified word vector
 #[derive(Debug, Clone, PartialEq)]
-pub struct Solution (pub Vec<String>); 
+pub struct Solution (pub Vec<Word>); 
 impl Solution {
-    pub fn new(solution: Vec<String>) -> Self {
+    pub fn new(solution: Vec<Word>) -> Self {
         Self(solution)
     }
 }
@@ -176,10 +155,32 @@ impl Display for Solutions {
     }
 }
 
+pub fn solve(game: &Game) -> Option<Solutions> {        
+    if game.words.is_empty() || game.letters.is_empty() {
+        return Some(Solutions::empty());
+    }
+    
+    let matrix = create_matrix(&game.letters, &game.words);
+    let words_array1 = Array1::from(game.words.clone());
+
+    // Get the solutions, which will be an exotic type. We will convert it to Solutions
+    let deques = solve_recursive(&words_array1, &matrix);
+    if deques.is_empty() {
+        None
+    } else {
+        let solutions = deques.into_iter()
+            .map(|deque| deque.into_iter().collect())
+            .map(Solution::new)
+            .collect();
+
+        Some(Solutions::new(solutions))
+    }
+}
+
 fn solve_recursive(
     words: &Array1<Word>,
     matrix: &Array2<bool>,
-) -> Vec<VecDeque<String>> {
+) -> Vec<VecDeque<Word>> {
     let mut solutions = Vec::new();
 
     // If matrix is empty, the caller found a solution!
@@ -256,11 +257,24 @@ fn choose_column_with_rarest_letter(matrix: &Array2<bool>) -> usize {
 /// As we recurse down a particular path, we can reduce the matrix to 
 /// horizontally: remove letters we already have covered
 /// vertically: remove words that don't seem to add much to letters we're going to cover.
-fn reduce_to_interesting<T: Clone>(
-    words: &Array1<T>,
+/// 
+/// TODO, IDEA: Knuth's Algorithm X may not be that appropriate since we aren't completely eliminating many words. 
+/// Alg X works by eliminating any subset which has an element that we already have. The "path" downwards through 
+/// all possibilities is then represented by the cut-down matrix. 
+/// 
+/// BUT, the only word we truly eliminate is the one we just picked. Any other word _could_ have a role in a Letter Boxed 
+/// solution, including words which don't add _any_ new letters, because maybe it's just bridging to a word we need later.
+/// 
+/// Since in Letter Boxed we only have 12 letters, we could easily represent a row as a bitmask u16,
+/// And then we simply pass downwards a Vec of which "rows" to consider, which will also handle Letter Boxed's need
+/// to connect words together. i.e. we eliminate some "rows" due to them not being helpful, then we eliminate even more 
+/// due to them not being connectable to the previous word, pass the list down and continue. Then we can actually keep the 
+/// words and matrix completely static!!
+fn reduce_to_interesting(
+    words: &Array1<Word>,
     matrix: &Array2<bool>,
     selected_row: usize,
-) -> (Array1<T>, Array2<bool>) {
+) -> (Array1<Word>, Array2<bool>) {
     // Find letters (cols) that are covered by the selected row
     let mut covered_mask = bitvec![0; matrix.ncols()];
     for col in 0..matrix.ncols() {
@@ -309,30 +323,29 @@ mod tests {
     use super::*;
     use ndarray::{array, Array2};
 
-    fn string_labels(strs: &[&str]) -> Vec<String> {
-        strs.iter().map(|s| s.to_string()).collect()
-    }
-
     #[test]
-    fn test_simple_exact_cover() {
-        // Simple exact cover problem from Wikipedia example
-        let labels = array![0, 1, 2, 3, 4, 5];
-        let matrix = array![
-            [true, false, false, true, false, false],
-            [true, false, false, true, false, false],
-            [false, false, false, true, true, false],
-            [false, false, true, false, true, true],
-            [false, true, true, false, false, true],
-            [false, true, false, false, false, false]
-        ];
+    fn test_interesting() {
+        let game = Game::new(
+            "ABCDEF".to_string(),
+            vec![
+                "ABCD".to_string(),
+                "BC".to_string(),
+                "CD".to_string(),
+                "DE".to_string(),
+                "EF".to_string(),
+                "FA".to_string(),
+                "ACE".to_string(),
+                "BDF".to_string(),
+            ],
+        );
         
-        let solution = solve_matrix(labels.view(), matrix.view());
-        assert!(solution.is_some());
-        let sol = solution.unwrap().0;
-        // Should find a valid solution
-        assert!(!sol.is_empty());
+        let solutions = solve(&game);
+        assert!(solutions.is_some());
+        let sol = solutions.unwrap();        
+        assert!(!sol.0.is_empty());
+        println!("Solutions:\n{}", sol);
     }
-
+/*
     #[test]
     fn test_no_solution() {
         let labels = array![0, 1];
@@ -439,30 +452,6 @@ mod tests {
         assert!(sol.contains(&expected1));
 
     }
-
-    #[test]
-    fn test_exact_cover_with_one_subset_with_everything() {
-        // Create universe with elements [1, 2, 3, 4, 5, 6, 7]
-        let universe = Game::new(vec![1, 2, 3, 4, 5, 6, 7]);
-        
-        let subsets = vec![
-            vec![1, 2, 3, 4, 5, 6, 7],    // A
-            vec![1, 4],       // B
-            vec![4, 5, 7],    // C
-        ];
-        
-        let labels = string_labels(&["A", "B", "C"]);
-        
-        let solution = universe.solve(&labels, &subsets);
-        assert!(solution.is_some());
-        
-        let sol = solution.unwrap().0;
-        assert!(!sol.is_empty());
-        let solution_set = sol[0].clone();
-        
-        let expected = string_labels(&["A"]);
-        
-        assert_eq!(solution_set, expected);
-    }
+ */
 
 }
