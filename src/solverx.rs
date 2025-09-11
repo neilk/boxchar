@@ -4,6 +4,9 @@ use std::fmt::Display;
 use std::hash::Hash;
 use bitvec::prelude::*;
 
+// Minimum number of uncovered letters a word must have to remain interesting
+const MIN_UNCOVERED_COUNT: usize = 2;
+
 
 
 #[derive(Debug, Clone, Copy, Eq, Hash)]
@@ -269,7 +272,6 @@ fn reduce_to_interesting<T: Clone>(
     // Find (words) that are mostly or entirely covered by the existing row
     // The selected row should have zero unconvered letters. So we do not need to special case it. I think.
     let mut covered_or_mostly_covered_rows = Vec::new();
-    let min_uncovered_count = 2; // We might want to tune this based on how many letters remain to cover?;
     for row in 0..matrix.nrows() {
         let uncovered_count = matrix.row(row)
             .iter()
@@ -277,7 +279,7 @@ fn reduce_to_interesting<T: Clone>(
             .filter(|&(col, &is_true)| !covered_mask[col] && is_true)
             .count();
 
-        if uncovered_count < min_uncovered_count {
+        if uncovered_count < MIN_UNCOVERED_COUNT {
             covered_or_mostly_covered_rows.push(row);
         }
     }
