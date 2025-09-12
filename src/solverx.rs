@@ -1,8 +1,9 @@
+use bitvec::prelude::*;
 use ndarray::{Array1, Array2, Axis};
+// use log::{debug, info};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::fmt::Display;
 use std::hash::Hash;
-use bitvec::prelude::*;
 
 // Minimum number of uncovered letters a word must have to remain interesting
 const MIN_UNCOVERED_COUNT: usize = 2;
@@ -83,28 +84,188 @@ impl Game {
 
 }
 
-fn create_matrix(letters: &HashSet<Letter>, words: &[Word]) -> Array2<bool> {
-    // Assign the letters to arbitrary column indexes. It doesn't matter what, they just have to have one.
-    let letters_to_cols: HashMap<&Letter, usize> = letters
-        .iter()
-        .enumerate()
-        .map(|(i, letter)| (letter, i))    
-        .collect();
+pub struct SolverX;
+impl SolverX {
+    fn create_matrix(letters: &HashSet<Letter>, words: &[Word]) -> Array2<bool> {
+        // Assign the letters to arbitrary column indexes. It doesn't matter what, they just have to have one.
+        let letters_to_cols: HashMap<&Letter, usize> = letters
+            .iter()
+            .enumerate()
+            .map(|(i, letter)| (letter, i))    
+            .collect();
 
-    let row_count = words.len();
-    let col_count = letters_to_cols.len();
-    let mut matrix = Array2::from_elem((row_count, col_count), false);
+        let row_count = words.len();
+        let col_count = letters_to_cols.len();
+        let mut matrix = Array2::from_elem((row_count, col_count), false);
 
-    for (row, word) in words.iter().enumerate() {
-        for letter in &word.0 {
-            if let Some(&col) = letters_to_cols.get(letter) {
-                matrix[[row, col]] = true;
+        for (row, word) in words.iter().enumerate() {
+            for letter in &word.0 {
+                if let Some(&col) = letters_to_cols.get(letter) {
+                    matrix[[row, col]] = true;
+                }
             }
         }
+        
+        matrix
     }
-    
-    matrix
+
+
+    pub fn solve(game: &Game) -> Option<Solutions> {        
+        if game.words.is_empty() || game.letters.is_empty() {
+            return Some(Solutions::empty());
+        }
+        
+        let matrix = Self::create_matrix(&game.letters, &game.words);
+        let words_array1 = Array1::from(game.words.clone());
+
+        // Get the solutions, which will be an exotic type. We will convert it to Solutions
+        let deques = Self::solve_recursive(&words_array1, &matrix);
+        if deques.is_empty() {
+            None
+        } else {
+            let solutions = deques.into_iter()
+                .map(|deque| deque.into_iter().collect())
+                .map(Solution::new)
+                .collect();
+
+            Some(Solutions::new(solutions))
+        }
+    }
+
+    fn solve_recursive(
+        words: &Array1<Word>,
+        matrix: &Array2<bool>,
+    ) -> Vec<VecDeque<Word>> {
+        println!("==== Solving recursively...");
+        println!("Matrix shape: ({}, {})", matrix.nrows(), matrix.ncols());
+        println!("Words count: {}", words.len());
+        println!("Matrix:\n{}", matrix);
+
+        let mut solutions = Vec::new();
+
+        // If matrix is empty, the caller found a solution!
+        // We indicate to our callers that we found a solution by returning a Vec with one empty VecDeque
+        if matrix.ncols() == 0 {
+            solutions.push(VecDeque::new());
+            return solutions;
+        }
+        
+        // If any column is empty, no solution exists
+        for col in 0..matrix.ncols() {
+            let mut has_true = false;
+            for row in 0..matrix.nrows() {
+                if matrix[[row, col]] {
+                    has_true = true;
+                    break;
+                }
+            }
+            if !has_true {
+                return Vec::new();
+            }
+        }
+                
+        // Iterate over all word rows and recurse
+        for row in 0..matrix.nrows() {            
+            let current_label = words[row].clone();
+            
+            // Given the current word we are considering, 
+            // reduce the matrix of remaining words accordingly for this recursive path. 
+            let (reduced_words, reduced_matrix) = Self::reduce_to_interesting(words, matrix, row);
+
+            let tail_solutions = Self::solve_recursive(
+                &reduced_words,
+                &reduced_matrix,
+            );
+            
+            // Prepend current label to each tail solution
+            for mut tail in tail_solutions {
+                tail.push_front(current_label.clone());
+                solutions.push(tail);
+            }
+        }
+        
+        solutions
+    }
+
+    /// As we recurse down a particular path, we can reduce the matrix to 
+    /// horizontally: remove letters we already have covered
+    /// vertically: remove words that don't seem to add much to letters we're going to cover.
+    /// 
+    /// TODO, IDEA: Knuth's Algorithm X may not be that appropriate since we aren't completely eliminating many words. 
+    /// Alg X works by eliminating any subset which has an element that we already have. The "path" downwards through 
+    /// all possibilities is then represented by the cut-down matrix. 
+    /// 
+    /// BUT, the only word we truly eliminate is the one we just picked. Any other word _could_ have a role in a Letter Boxed 
+    /// solution, including words which don't add _any_ new letters, because maybe it's just bridging to a word we need later.
+    /// 
+    /// Since in Letter Boxed we only have 12 letters, we could easily represent a row as a bitmask u16,
+    /// And then we simply pass downwards a Vec of which "rows" to consider, which will also handle Letter Boxed's need
+    /// to connect words together. i.e. we eliminate some "rows" due to them not being helpful, then we eliminate even more 
+    /// due to them not being connectable to the previous word, pass the list down and continue. Then we can actually keep the 
+    /// words and matrix completely static!!
+    fn reduce_to_interesting(
+        words: &Array1<Word>,
+        matrix: &Array2<bool>,
+        selected_row: usize,
+    ) -> (Array1<Word>, Array2<bool>) {
+        println!("Reducing matrix based on selected word: {}", words[selected_row].to_string());
+        
+        let selected_word = &words[selected_row];
+        let selected_word_last_char = selected_word.0.last().unwrap();
+
+        // Find letters (cols) that are covered by the selected row
+        let mut covered_mask = bitvec![0; matrix.ncols()];
+        for col in 0..matrix.ncols() {
+            if matrix[[selected_row, col]] {
+                covered_mask.set(col, true);
+            }
+        }
+
+        // Find (words) that are mostly or entirely covered by the existing row
+        // The selected row should have zero unconvered letters. So we do not need to special case it. I think.
+        let mut excluded_rows = Vec::new();
+        for row in 0..matrix.nrows() {
+            let uncovered_count = matrix.row(row)
+                .iter()
+                .enumerate()
+                .filter(|&(col, &is_true)| !covered_mask[col] && is_true)
+                .count();
+
+            if uncovered_count < MIN_UNCOVERED_COUNT {
+                println!("Excluding word {} due to too few uncovered letters", words[row].to_string());
+                excluded_rows.push(row);
+            } else {
+                // If the word does not start with the last letter of the selected word, exclude it
+                if let Some(first_letter) = words[row].0.first() {
+                    if first_letter != selected_word_last_char {
+                        println!("Excluding word {} due to not connecting", words[row].to_string());
+                        excluded_rows.push(row);
+                    }
+                }
+            }   
+        }
+        
+        // Create indices for remaining rows and columns
+        let remaining_rows: Vec<_> = (0..matrix.nrows())
+            .filter(|&row| !excluded_rows.contains(&row))
+            .collect();
+        let remaining_cols: Vec<_> = (0..matrix.ncols())
+            .filter(|&col| !covered_mask[col])
+            .collect();
+        
+        // Use select to create new arrays for labels and the matrix. 
+        // The .select method avoids copying!
+        let new_words = words.select(Axis(0), &remaining_rows);
+        let new_matrix = matrix
+            .select(Axis(0), &remaining_rows)
+            .select(Axis(1), &remaining_cols);
+
+        (new_words, new_matrix)
+    }
+
 }
+
+
 
 
 // A solution containing a single combination of selected words. Glorified word vector
@@ -155,177 +316,6 @@ impl Display for Solutions {
     }
 }
 
-pub fn solve(game: &Game) -> Option<Solutions> {        
-    if game.words.is_empty() || game.letters.is_empty() {
-        return Some(Solutions::empty());
-    }
-    
-    let matrix = create_matrix(&game.letters, &game.words);
-    let words_array1 = Array1::from(game.words.clone());
-
-    // Get the solutions, which will be an exotic type. We will convert it to Solutions
-    let deques = solve_recursive(&words_array1, &matrix);
-    if deques.is_empty() {
-        None
-    } else {
-        let solutions = deques.into_iter()
-            .map(|deque| deque.into_iter().collect())
-            .map(Solution::new)
-            .collect();
-
-        Some(Solutions::new(solutions))
-    }
-}
-
-fn solve_recursive(
-    words: &Array1<Word>,
-    matrix: &Array2<bool>,
-) -> Vec<VecDeque<Word>> {
-    let mut solutions = Vec::new();
-
-    // If matrix is empty, the caller found a solution!
-    // We indicate to our callers that we found a solution by returning a Vec with one empty VecDeque
-    if matrix.ncols() == 0 {
-        solutions.push(VecDeque::new());
-        return solutions;
-    }
-    
-    // If any column is empty, no solution exists
-    for col in 0..matrix.ncols() {
-        let mut has_true = false;
-        for row in 0..matrix.nrows() {
-            if matrix[[row, col]] {
-                has_true = true;
-                break;
-            }
-        }
-        if !has_true {
-            return Vec::new();
-        }
-    }
-    
-    // Choose letter which is the most infrequent (heuristic)
-    let chosen_col = choose_column_with_rarest_letter(&matrix);
-    
-    
-    // Iterate over all word rows and recurse
-    for row in 0..matrix.nrows() {
-        if !matrix[[row, chosen_col]] {
-            continue;
-        }
-        
-        let current_label = words[row].clone();
-        
-        // Given the current word we are considering, 
-        // reduce the matrix of remaining words accordingly for this recursive path. 
-        let (reduced_words, reduced_matrix) = reduce_to_interesting(words, matrix, row);
-
-        let tail_solutions = solve_recursive(
-            &reduced_words,
-            &reduced_matrix,
-        );
-        
-        // Prepend current label to each tail solution
-        for mut tail in tail_solutions {
-            tail.push_front(current_label.clone());
-            solutions.push(tail);
-        }
-    }
-    
-    solutions
-}
-
-/// Choose the column with the minimum number of 1s (Knuth's heuristic)
-fn choose_column_with_rarest_letter(matrix: &Array2<bool>) -> usize {
-    let mut min_count = matrix.nrows() + 1;
-    let mut chosen_col = 0;
-    
-    for col in 0..matrix.ncols() {
-        let count = (0..matrix.nrows())
-            .map(|row| if matrix[[row, col]] { 1 } else { 0 })
-            .sum::<usize>();
-        
-        if count < min_count {
-            min_count = count;
-            chosen_col = col;
-        }
-    }
-    
-    chosen_col
-}
-
-/// As we recurse down a particular path, we can reduce the matrix to 
-/// horizontally: remove letters we already have covered
-/// vertically: remove words that don't seem to add much to letters we're going to cover.
-/// 
-/// TODO, IDEA: Knuth's Algorithm X may not be that appropriate since we aren't completely eliminating many words. 
-/// Alg X works by eliminating any subset which has an element that we already have. The "path" downwards through 
-/// all possibilities is then represented by the cut-down matrix. 
-/// 
-/// BUT, the only word we truly eliminate is the one we just picked. Any other word _could_ have a role in a Letter Boxed 
-/// solution, including words which don't add _any_ new letters, because maybe it's just bridging to a word we need later.
-/// 
-/// Since in Letter Boxed we only have 12 letters, we could easily represent a row as a bitmask u16,
-/// And then we simply pass downwards a Vec of which "rows" to consider, which will also handle Letter Boxed's need
-/// to connect words together. i.e. we eliminate some "rows" due to them not being helpful, then we eliminate even more 
-/// due to them not being connectable to the previous word, pass the list down and continue. Then we can actually keep the 
-/// words and matrix completely static!!
-fn reduce_to_interesting(
-    words: &Array1<Word>,
-    matrix: &Array2<bool>,
-    selected_row: usize,
-) -> (Array1<Word>, Array2<bool>) {
-    let selected_word = &words[selected_row];
-    let selected_word_last_char = selected_word.0.last().unwrap();
-
-    // Find letters (cols) that are covered by the selected row
-    let mut covered_mask = bitvec![0; matrix.ncols()];
-    for col in 0..matrix.ncols() {
-        if matrix[[selected_row, col]] {
-            covered_mask.set(col, true);
-        }
-    }
-
-    // Find (words) that are mostly or entirely covered by the existing row
-    // The selected row should have zero unconvered letters. So we do not need to special case it. I think.
-    let mut excluded_rows = Vec::new();
-    for row in 0..matrix.nrows() {
-        let uncovered_count = matrix.row(row)
-            .iter()
-            .enumerate()
-            .filter(|&(col, &is_true)| !covered_mask[col] && is_true)
-            .count();
-
-        if uncovered_count < MIN_UNCOVERED_COUNT {
-            excluded_rows.push(row);
-        } else {
-            // If the word does not start with the last letter of the selected word, exclude it
-            if let Some(first_letter) = words[row].0.first() {
-                if first_letter != selected_word_last_char {
-                    excluded_rows.push(row);
-                }
-            }
-        }   
-    }
-    
-    // Create indices for remaining rows and columns
-    let remaining_rows: Vec<_> = (0..matrix.nrows())
-        .filter(|&row| !excluded_rows.contains(&row))
-        .collect();
-    let remaining_cols: Vec<_> = (0..matrix.ncols())
-        .filter(|&col| !covered_mask[col])
-        .collect();
-    
-    // Use select to create new arrays for labels and the matrix. 
-    // The .select method avoids copying!
-    let new_words = words.select(Axis(0), &remaining_rows);
-    let new_matrix = matrix
-        .select(Axis(0), &remaining_rows)
-        .select(Axis(1), &remaining_cols);
-
-    (new_words, new_matrix)
-}
-
 
 
 #[cfg(test)]
@@ -337,18 +327,36 @@ mod tests {
         let game = Game::new(
             "ABCDEF".to_string(),
             vec![
+                "EBDF".to_string(),
                 "ABCD".to_string(),
                 "DEF".to_string(),
                 "ACE".to_string(),
-                "EBDF".to_string(),
             ],
         );
         
-        let solutions = solve(&game);
-        assert!(solutions.is_some());
-        let sol = solutions.unwrap();        
-        assert!(!sol.0.is_empty());
-        println!("Solutions:\n{}", sol);
+        let opt_solutions = SolverX::solve(&game);
+        assert!(opt_solutions.is_some());
+        let solutions = opt_solutions.unwrap();
+        println!("Solutions:\n{}", solutions);
+
+        let solutions_vec = solutions.0;        
+        
+        assert!(!solutions_vec.is_empty());
+        assert!(solutions_vec.len() == 2);
+        
+        // Build expected solutions: ABCD-DEF and ACE-EBDF
+        let expected1 = Solution::new(vec![
+            Word::from_str("ABCD").unwrap(),
+            Word::from_str("DEF").unwrap(),
+        ]);
+        let expected2 = Solution::new(vec![
+            Word::from_str("ACE").unwrap(),
+            Word::from_str("EBDF").unwrap(),
+        ]); 
+
+        assert!(solutions_vec.contains(&expected1));
+        assert!(solutions_vec.contains(&expected2));
+
     }
 /*
     #[test]
