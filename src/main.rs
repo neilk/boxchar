@@ -134,7 +134,7 @@ fn main() -> std::io::Result<()> {
                 } else {
                     debug!("Found {} solutions.", solutions.len());
                     println!("--- Solutions from Solver ---");
-                    for solution in solutions.iter() {
+                    for solution in solutions.iter().take(10) {
                         println!("{}", solution);
                     }
                 }
@@ -146,7 +146,7 @@ fn main() -> std::io::Result<()> {
                     Some(solutionsx) => {
                         let sols = solutionsx.0;
                         debug!("Found {} solutions with SolverX.", sols.len());
-                        for solutionx in sols.iter() {
+                        for solutionx in sols.iter().take(10) {
                             println!("{}", solutionx);
                         }
                     }
