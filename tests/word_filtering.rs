@@ -1,4 +1,4 @@
-use boxchar::game::Game;
+use boxchar::board::Board;
 use boxchar::wordlist::Wordlist;
 use tempfile::NamedTempFile;
 use std::io::Write;
@@ -23,7 +23,7 @@ fn test_extract_digraphs_simple() {
 #[test]
 fn test_possible_words() {
     let sides = sides_from_strs(&["ABC", "DEF", "GHI", "JKL"]);
-    let game = Game::from_sides(sides).unwrap();
+    let game = Board::from_sides(sides).unwrap();
     
     let wordlist_content = "ADGJ\nABCD\nXYZ\n";
     let mut wordlist_file = NamedTempFile::new().unwrap();
@@ -40,7 +40,7 @@ fn test_possible_words() {
 #[test]
 fn test_possible_words_wordlist_file() {
     let sides = sides_from_strs(&["RNY", "ADM", "IUX", "TOZ"]);
-    let game = Game::from_sides(sides).unwrap();
+    let game = Board::from_sides(sides).unwrap();
     let wordlist = Wordlist::from_path("data/wordlist_test.txt").unwrap();
     
     let possible_words = game.possible_words(&wordlist);

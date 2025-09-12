@@ -1,4 +1,4 @@
-use boxchar::game::Game;
+use boxchar::board::Board;
 
 mod common;
 use common::sides_from_strs;
@@ -6,7 +6,7 @@ use common::sides_from_strs;
 #[test]
 fn test_valid_game() {
     let sides = sides_from_strs(&["ABC", "DEF", "GHI", "JKL"]);
-    let game = Game::from_sides(sides).unwrap();
+    let game = Board::from_sides(sides).unwrap();
     
     assert_eq!(game.sides.len(), 4);
     assert_eq!(game.sides[0], "ABC");
@@ -16,7 +16,7 @@ fn test_valid_game() {
 #[test]
 fn test_invalid_number_of_sides() {
     let sides = sides_from_strs(&["ABC", "DEF", "GHI"]); // Only 3 sides
-    let result = Game::from_sides(sides);
+    let result = Board::from_sides(sides);
     
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("exactly 4 sides"));
@@ -25,7 +25,7 @@ fn test_invalid_number_of_sides() {
 #[test]
 fn test_uneven_sides() {
     let sides = sides_from_strs(&["ABC", "DEF", "GHIJ", "KLM"]);
-    let result = Game::from_sides(sides);
+    let result = Board::from_sides(sides);
     
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("same length"));
@@ -34,7 +34,7 @@ fn test_uneven_sides() {
 #[test]
 fn test_duplicate_letters() {
     let sides = sides_from_strs(&["ABC", "DEF", "GHA", "JKL"]); // 'A' appears twice
-    let result = Game::from_sides(sides);
+    let result = Board::from_sides(sides);
     
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("Duplicate letter"));
@@ -43,7 +43,7 @@ fn test_duplicate_letters() {
 #[test]
 fn test_lowercase_letters() {
     let sides = sides_from_strs(&["ABC", "def", "GHI", "JKL"]);
-    let result = Game::from_sides(sides);
+    let result = Board::from_sides(sides);
     
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("uppercase"));
@@ -52,7 +52,7 @@ fn test_lowercase_letters() {
 #[test]
 fn test_valid_digraphs_generation() {
     let sides = sides_from_strs(&["AB", "CD", "EF", "GH"]);
-    let game = Game::from_sides(sides).unwrap();
+    let game = Board::from_sides(sides).unwrap();
     
     // Test specific digraphs that should exist
     assert!(game.valid_digraphs.contains("AC"));
@@ -66,7 +66,7 @@ fn test_valid_digraphs_generation() {
 fn test_from_sides_valid_game() {
     let sides = sides_from_strs(&["ABC", "DEF", "GHI", "JKL"]);
     
-    let game = Game::from_sides(sides).unwrap();
+    let game = Board::from_sides(sides).unwrap();
     
     assert_eq!(game.sides.len(), 4);
     assert_eq!(game.sides[0], "ABC");
@@ -80,7 +80,7 @@ fn test_from_sides_valid_game() {
 fn test_from_sides_invalid_duplicate_letters() {
     let sides = sides_from_strs(&["ABC", "DEF", "GHA", "JKL"]);
     
-    let result = Game::from_sides(sides);
+    let result = Board::from_sides(sides);
     
     assert!(result.is_err());
     assert!(result.unwrap_err().to_string().contains("Duplicate letter"));

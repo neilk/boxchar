@@ -1,4 +1,4 @@
-use boxchar::game::Game;
+use boxchar::board::Board;
 use boxchar::wordlist::{extract_digraphs,Wordlist};
 use boxchar::solver::Solver;
 
@@ -8,7 +8,7 @@ use common::sides_from_strs;
 #[test]
 fn test_solver_basic() {
     let sides = sides_from_strs(&["YFA", "OTK", "LGW", "RNI"]);
-    let game = Game::from_sides(sides).unwrap();
+    let game = Board::from_sides(sides).unwrap();
     
     // Create a minimal wordlist for testing
     let words = vec![

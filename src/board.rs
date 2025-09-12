@@ -1,21 +1,21 @@
+use crate::wordlist::Wordlist;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
-use std::collections::{HashSet, HashMap};
-use crate::wordlist::Wordlist;
 
 #[derive(Debug)]
-pub struct Game {
+pub struct Board {
     pub sides: Vec<String>,
     pub valid_digraphs: HashSet<String>,
 }
 
-impl Game {
+impl Board {
     pub fn from_sides(sides: Vec<String>) -> io::Result<Self> {
         Self::validate_structure(&sides)?;
         Self::validate_content(&sides)?;
 
-        let mut game = Game {
+        let mut game = Board {
             sides,
             valid_digraphs: HashSet::new(),
         };
@@ -26,8 +26,7 @@ impl Game {
     pub fn from_path<P: AsRef<Path>>(path: P) -> io::Result<Self> {
         let file = File::open(path)?;
         let reader = BufReader::new(file);
-        let sides: Vec<String> = reader.lines()
-            .collect::<io::Result<Vec<String>>>()?;
+        let sides: Vec<String> = reader.lines().collect::<io::Result<Vec<String>>>()?;
 
         Self::from_sides(sides)
     }
@@ -36,14 +35,14 @@ impl Game {
         if sides.len() != 4 {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
-                format!("Game must contain exactly 4 sides, found {}", sides.len())
+                format!("Game must contain exactly 4 sides, found {}", sides.len()),
             ));
         }
 
         if sides.iter().any(|side| side.is_empty()) {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
-                "Empty sides are not allowed"
+                "Empty sides are not allowed",
             ));
         }
 
@@ -77,8 +76,10 @@ impl Game {
                 if let Some(previous_side) = seen_chars.insert(c, side_num) {
                     return Err(io::Error::new(
                         io::ErrorKind::InvalidData,
-                        format!("Duplicate letter '{}' found on sides {} and {}", 
-                            c, previous_side, side_num)
+                        format!(
+                            "Duplicate letter '{}' found on sides {} and {}",
+                            c, previous_side, side_num
+                        ),
                     ));
                 }
             }
@@ -103,13 +104,19 @@ impl Game {
     }
 
     pub fn possible_words(&self, wordlist: &Wordlist) -> Vec<String> {
-        let usable_digraphs: HashSet<&String> = self.valid_digraphs.intersection(&wordlist.valid_digraphs).collect();
+        let usable_digraphs: HashSet<&String> = self
+            .valid_digraphs
+            .intersection(&wordlist.valid_digraphs)
+            .collect();
 
-        wordlist.words
+        wordlist
+            .words
             .iter()
             .filter(|word| {
                 if let Some(required_digraphs) = wordlist.word_digraphs.get(*word) {
-                    required_digraphs.iter().all(|d| usable_digraphs.contains(d))
+                    required_digraphs
+                        .iter()
+                        .all(|d| usable_digraphs.contains(d))
                 } else {
                     false
                 }

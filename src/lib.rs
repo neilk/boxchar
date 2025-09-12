@@ -1,5 +1,5 @@
 pub mod algorithmx;
-pub mod game;
+pub mod board;
 pub mod wordlist;
 pub mod solver;
 pub mod solverx;

@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::fmt;
-use crate::game::Game;
+use crate::board::Board;
 use crate::wordlist::Wordlist;
 
 #[derive(Debug, Clone)]
@@ -23,12 +23,12 @@ impl fmt::Display for Solution {
 }
 
 pub struct Solver {
-    game: Game,
+    game: Board,
     possible_words: Vec<String>,
 }
 
 impl Solver {
-    pub fn new(game: Game, wordlist: Wordlist) -> Self {
+    pub fn new(game: Board, wordlist: Wordlist) -> Self {
         let possible_words = game.possible_words(&wordlist);
         Solver {
             game,
@@ -159,7 +159,7 @@ mod tests {
             "EF".to_string(), 
             "GH".to_string()
         ];
-        let game = Game::from_sides(sides).unwrap();
+        let game = Board::from_sides(sides).unwrap();
         let wordlist = Wordlist { 
             words: vec![], 
             word_digraphs: std::collections::HashMap::new(),
