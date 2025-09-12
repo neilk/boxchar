@@ -4,7 +4,7 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Board {
     pub sides: Vec<String>,
     pub valid_digraphs: HashSet<String>,

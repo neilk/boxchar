@@ -136,11 +136,6 @@ impl SolverX {
         words: &Array1<Word>,
         matrix: &Array2<bool>,
     ) -> Vec<VecDeque<Word>> {
-        println!("==== Solving recursively...");
-        println!("Matrix shape: ({}, {})", matrix.nrows(), matrix.ncols());
-        println!("Words count: {}", words.len());
-        println!("Matrix:\n{}", matrix);
-
         let mut solutions = Vec::new();
 
         // If matrix is empty, the caller found a solution!
@@ -207,9 +202,7 @@ impl SolverX {
         words: &Array1<Word>,
         matrix: &Array2<bool>,
         selected_row: usize,
-    ) -> (Array1<Word>, Array2<bool>) {
-        println!("Reducing matrix based on selected word: {}", words[selected_row].to_string());
-        
+    ) -> (Array1<Word>, Array2<bool>) {        
         let selected_word = &words[selected_row];
         let selected_word_last_char = selected_word.0.last().unwrap();
 
@@ -232,13 +225,11 @@ impl SolverX {
                 .count();
 
             if uncovered_count < MIN_UNCOVERED_COUNT {
-                println!("Excluding word {} due to too few uncovered letters", words[row].to_string());
                 excluded_rows.push(row);
             } else {
                 // If the word does not start with the last letter of the selected word, exclude it
                 if let Some(first_letter) = words[row].0.first() {
                     if first_letter != selected_word_last_char {
-                        println!("Excluding word {} due to not connecting", words[row].to_string());
                         excluded_rows.push(row);
                     }
                 }

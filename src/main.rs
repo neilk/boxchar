@@ -1,6 +1,8 @@
 use boxchar::{board::Board, solver::Solver, wordlist::Wordlist}; // using our library!
+use boxchar::solverx::Game;
+use boxchar::solverx::SolverX;
 use clap::Parser;
-use log::{debug, info};
+use log::{debug};
 use std::{collections::HashSet, path::Path};
 
 #[derive(Parser)]
@@ -42,7 +44,7 @@ fn main() -> std::io::Result<()> {
     let wordlist_path = Path::new(&args.wordlist);
 
     // Handle game - either from positional argument or --game option
-    let game = match (&args.game_spec, &args.game) {
+    let board = match (&args.game_spec, &args.game) {
         (Some(spec), None) => {
             // Parse comma-separated game specification
             match validate_game_spec(spec) {
@@ -97,22 +99,25 @@ fn main() -> std::io::Result<()> {
     }
 
     debug!("Successfully loaded game:");
-    for (i, side) in game.sides.iter().enumerate() {
+    for (i, side) in board.sides.iter().enumerate() {
         debug!("Side {}: {} ({} letters)", i, side, side.len());
     }
     debug!(
         "Number of valid digraphs in this game: {}",
-        game.valid_digraphs.len()
+        board.valid_digraphs.len()
     );
     debug!("Valid digraphs in this game:");
-    debug!("{}", format_valid_digraphs(&game.valid_digraphs));
+    debug!("{}", format_valid_digraphs(&board.valid_digraphs));
+
+    let board_string = board.sides.join("");
+
 
     match Wordlist::from_path(wordlist_path) {
         Ok(wordlist) => {
             debug!("Successfully loaded wordlist:");
             debug!("Number of words: {}", wordlist.words.len());
             {
-                let possible_words = game.possible_words(&wordlist);
+                let possible_words = board.possible_words(&wordlist);
                 debug!("\nFirst 10 possible words for this game:");
                 for word in possible_words.iter().take(10) {
                     debug!("  {}", word);
@@ -121,15 +126,32 @@ fn main() -> std::io::Result<()> {
 
                 // Run the solver
                 debug!("\nSolving the puzzle...");
-                let solver = Solver::new(game, wordlist);
+                let solver = Solver::new(board, wordlist);
                 let solutions = solver.solve();
 
                 if solutions.is_empty() {
                     debug!("No solutions found!");
                 } else {
                     debug!("Found {} solutions.", solutions.len());
+                    println!("--- Solutions from Solver ---");
                     for solution in solutions.iter() {
                         println!("{}", solution);
+                    }
+                }
+
+                debug!("\nSolving the puzzle again with SolverX...");
+                println!("--- Solutions from SolverX ---");
+                let game = Game::new(board_string, possible_words);
+                match SolverX::solve(&game) {
+                    Some(solutionsx) => {
+                        let sols = solutionsx.0;
+                        debug!("Found {} solutions with SolverX.", sols.len());
+                        for solutionx in sols.iter() {
+                            println!("{}", solutionx);
+                        }
+                    }
+                    None => {
+                        eprintln!("No solutions found");
                     }
                 }
             }
