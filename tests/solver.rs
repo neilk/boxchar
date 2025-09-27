@@ -1,5 +1,5 @@
 use boxchar::board::Board;
-use boxchar::wordlist::{extract_digraphs,Wordlist};
+use boxchar::wordlist::Wordlist;
 use boxchar::solver::Solver;
 
 mod common;
@@ -14,10 +14,16 @@ fn test_solver_basic() {
     let words = vec![
         "FORKLIFT".to_string(),
         "TWANGY".to_string(),
+        "FILTRATION".to_string(),
+        "NAG".to_string(),
+        "GAWKILY".to_string(),
     ];
     let wordlist = Wordlist::from_words(words);
     let solver = Solver::new(game, wordlist);
     let solutions = solver.solve();
-    
+
     assert!(!solutions.is_empty());
+    assert!(solutions.len() == 2);
+    assert!(solutions.iter().any(|s| s.to_string() == "FORKLIFT-TWANGY"));
+    assert!(solutions.iter().any(|s| s.to_string() == "FILTRATION-NAG-GAWKILY"));
 }
