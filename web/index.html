@@ -250,52 +250,55 @@
                 showError('Solver not ready yet. Please wait and try again.');
                 return;
             }
-            
+
             const side1 = document.getElementById('side1').value.toUpperCase().trim();
             const side2 = document.getElementById('side2').value.toUpperCase().trim();
             const side3 = document.getElementById('side3').value.toUpperCase().trim();
             const side4 = document.getElementById('side4').value.toUpperCase().trim();
-            
+
             if (!side1 || !side2 || !side3 || !side4) {
                 showError('Please fill in all four sides of the puzzle.');
                 return;
             }
-            
+
             const sides = [side1, side2, side3, side4];
-            
+
             // Show loading state
             const solveBtn = document.getElementById('solveBtn');
             const originalText = solveBtn.textContent;
             solveBtn.textContent = 'Solving...';
             solveBtn.disabled = true;
-            
+
             const resultsDiv = document.getElementById('results');
             const solutionsList = document.getElementById('solutionsList');
-            
+
             solutionsList.innerHTML = '<div class="loading">Searching for solutions...</div>';
             resultsDiv.style.display = 'block';
-            
-            try {
-                // Start timer
-                const startTime = performance.now();
-                
-                // Call the WASM function with the loaded wordlist
-                const solutions = solve_game(sides, wordlist);
-                
-                // Calculate elapsed time
-                const endTime = performance.now();
-                const elapsedMs = Math.round(endTime - startTime);
-                
-                // Display results
-                displaySolutions(solutions, elapsedMs);
-            } catch (error) {
-                showError('Error solving puzzle: ' + error.message);
-                resultsDiv.style.display = 'none';
-            } finally {
-                // Reset button state
-                solveBtn.textContent = originalText;
-                solveBtn.disabled = false;
-            }
+
+            // Use setTimeout to allow the UI to update before the blocking call
+            setTimeout(() => {
+                try {
+                    // Start timer
+                    const startTime = performance.now();
+
+                    // Call the synchronous WASM function with the loaded wordlist
+                    const solutions = solve_game(sides, wordlist);
+
+                    // Calculate elapsed time
+                    const endTime = performance.now();
+                    const elapsedMs = Math.round(endTime - startTime);
+
+                    // Display results
+                    displaySolutions(solutions, elapsedMs);
+                } catch (error) {
+                    showError('Error solving puzzle: ' + error.message);
+                    resultsDiv.style.display = 'none';
+                } finally {
+                    // Reset button state
+                    solveBtn.textContent = originalText;
+                    solveBtn.disabled = false;
+                }
+            }, 10); // Small delay to allow UI update
         }
         
         function displaySolutions(solutions, elapsedMs = null) {
