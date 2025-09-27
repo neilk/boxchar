@@ -31,10 +31,11 @@ pub struct Solver {
     word_bitmaps: Vec<WordBitmap>,
     words_by_first_letter: HashMap<char, Vec<usize>>,
     all_letters_mask: u32,
+    max_solutions: usize,  // this is usize for convenience in comparisons to length(), but set from u16
 }
 
 impl Solver {
-    pub fn new(game: Board, wordlist: Wordlist) -> Self {
+    pub fn new(game: Board, wordlist: Wordlist, max_solutions: u16) -> Self {
         let possible_words = game.possible_words(&wordlist);
 
         // Create letter-to-bit mapping
@@ -76,23 +77,20 @@ impl Solver {
             word_bitmaps,
             words_by_first_letter,
             all_letters_mask,
+            max_solutions: max_solutions.into(),
         }
     }
 
     pub fn solve(&self) -> Vec<Solution> {
-        self.solve_with_max_solutions(500)
-    }
-
-    pub fn solve_with_max_solutions(&self, max_solutions: usize) -> Vec<Solution> {
         let mut solutions = Vec::new();
 
         // Try solutions of each exact length
         for target_words in 1..=4 {
             let mut current_path = Vec::new();
-            self.search_recursive(&mut current_path, 0, None, &mut solutions, max_solutions, target_words);
+            self.search_recursive(&mut current_path, 0, None, &mut solutions, target_words);
 
             // Continue searching until we hit the solution limit
-            if solutions.len() >= max_solutions {
+            if solutions.len() >= self.max_solutions {
                 break;
             }
         }
@@ -107,11 +105,10 @@ impl Solver {
         covered_bitmap: u32,
         last_char: Option<char>,
         solutions: &mut Vec<Solution>,
-        max_solutions: usize,
         target_words: usize,
     ) {
         // Early termination if we have enough solutions
-        if solutions.len() >= max_solutions {
+        if solutions.len() >= self.max_solutions {
             return;
         }
 
@@ -149,14 +146,13 @@ impl Solver {
                     new_bitmap,
                     new_last_char,
                     solutions,
-                    max_solutions,
                     target_words,
                 );
 
                 current_path.pop();
 
                 // Early termination check
-                if solutions.len() >= max_solutions {
+                if solutions.len() >= self.max_solutions {
                     return;
                 }
             }
@@ -217,7 +213,7 @@ mod tests {
             word_digraphs,
             valid_digraphs
         };
-        let solver = Solver::new(game, wordlist);
+        let solver = Solver::new(game, wordlist, 10);
 
         // Test that all letters bitmap is correctly calculated
         assert_eq!(solver.all_letters_mask, 0b11111111); // 8 bits for 8 letters

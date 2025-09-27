@@ -15,6 +15,9 @@ struct Args {
 
     #[arg(long, default_value = "data/wordlist.txt")]
     wordlist: String,
+
+    #[arg(long, default_value_t = 500u16)]
+    max_solutions: u16,
 }
 
 fn validate_game_spec(game_spec: &str) -> Result<Vec<String>, String> {
@@ -38,6 +41,8 @@ fn validate_game_spec(game_spec: &str) -> Result<Vec<String>, String> {
 fn main() -> std::io::Result<()> {
     env_logger::init();
     let args = Args::parse();
+
+    let max_solutions = args.max_solutions;
 
     let wordlist_path = Path::new(&args.wordlist);
 
@@ -109,35 +114,37 @@ fn main() -> std::io::Result<()> {
 
     match Wordlist::from_path(wordlist_path) {
         Ok(wordlist) => {
-            debug!("Successfully loaded wordlist:");
-            debug!("Number of words: {}", wordlist.words.len());
-            {
-                let possible_words = board.possible_words(&wordlist);
-                debug!("\nFirst 10 possible words for this game:");
-                for word in possible_words.iter().take(10) {
-                    debug!("  {}", word);
-                }
-                debug!("Total possible words: {}", possible_words.len());
-
-                // Run the solver
-                debug!("\nSolving the puzzle...");
-                let solver = Solver::new(board, wordlist);
-                let solutions = solver.solve();
-
-                if solutions.is_empty() {
-                    debug!("No solutions found!");
-                } else {
-                    debug!("Found {} solutions.", solutions.len());
-                    println!("--- Solutions from Solver ---");
-                    println!("Total solutions found: {}", solutions.len());
-                    for solution in solutions.iter() {
-                        println!("{}", solution);
-                    }
-                }
-            }
+            solve(board, wordlist, max_solutions);
         }
         Err(e) => eprintln!("Error loading wordlist: {}", e),
     }
 
     Ok(())
+}
+
+fn solve(board: Board, wordlist: Wordlist, max_solutions: u16) {
+    debug!("Successfully loaded wordlist:");
+    debug!("Number of words: {}", wordlist.words.len());
+    {
+        let possible_words = board.possible_words(&wordlist);
+        debug!("\nFirst 10 possible words for this game:");
+        for word in possible_words.iter().take(10) {
+            debug!("  {}", word);
+        }
+        debug!("Total possible words: {}", possible_words.len());
+
+        // Run the solver
+        debug!("\nSolving the puzzle...");
+        let solver = Solver::new(board, wordlist, max_solutions);
+        let solutions = solver.solve();
+
+        if solutions.is_empty() {
+            debug!("No solutions found!");
+        } else {
+            debug!("Found {} solutions.", solutions.len());
+            for solution in solutions.iter() {
+                println!("{}", solution);
+            }
+        }
+    }
 }

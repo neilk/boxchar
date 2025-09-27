@@ -156,7 +156,12 @@
                 <input type="text" id="side4" placeholder="e.g., ORP" maxlength="10">
             </div>
         </div>
-        
+
+        <div class="side-input" style="margin-top: 20px;">
+            <label for="maxSolutions">Max Solutions:</label>
+            <input type="number" id="maxSolutions" value="500" min="1" max="65535" style="padding: 10px; border: 2px solid #ddd; border-radius: 4px; font-size: 16px;">
+        </div>
+
         <button id="solveBtn" onclick="solvePuzzle()">Solve Puzzle</button>
     </div>
 
@@ -209,7 +214,8 @@
                 side1: document.getElementById('side1').value,
                 side2: document.getElementById('side2').value,
                 side3: document.getElementById('side3').value,
-                side4: document.getElementById('side4').value
+                side4: document.getElementById('side4').value,
+                maxSolutions: document.getElementById('maxSolutions').value
             };
             localStorage.setItem('letterBoxedPuzzle', JSON.stringify(puzzle));
         }
@@ -223,6 +229,7 @@
                     document.getElementById('side2').value = puzzle.side2 || '';
                     document.getElementById('side3').value = puzzle.side3 || '';
                     document.getElementById('side4').value = puzzle.side4 || '';
+                    document.getElementById('maxSolutions').value = puzzle.maxSolutions || '500';
                 }
             } catch (error) {
                 console.warn('Failed to load saved puzzle:', error);
@@ -231,7 +238,7 @@
         
         function setupInputListeners() {
             // Save to localStorage whenever input changes
-            ['side1', 'side2', 'side3', 'side4'].forEach(id => {
+            ['side1', 'side2', 'side3', 'side4', 'maxSolutions'].forEach(id => {
                 document.getElementById(id).addEventListener('input', savePuzzleToStorage);
             });
         }
@@ -255,9 +262,16 @@
             const side2 = document.getElementById('side2').value.toUpperCase().trim();
             const side3 = document.getElementById('side3').value.toUpperCase().trim();
             const side4 = document.getElementById('side4').value.toUpperCase().trim();
+            const maxSolutionsInput = document.getElementById('maxSolutions').value;
+            const maxSolutions = parseInt(maxSolutionsInput) || 500;
 
             if (!side1 || !side2 || !side3 || !side4) {
                 showError('Please fill in all four sides of the puzzle.');
+                return;
+            }
+
+            if (maxSolutions < 1 || maxSolutions > 65535) {
+                showError('Max solutions must be between 1 and 65535.');
                 return;
             }
 
@@ -282,14 +296,19 @@
                     const startTime = performance.now();
 
                     // Call the synchronous WASM function with the loaded wordlist
-                    const solutions = solve_game(sides, wordlist);
+                    const solutions = solve_game(sides, wordlist, maxSolutions);
 
                     // Calculate elapsed time
                     const endTime = performance.now();
                     const elapsedMs = Math.round(endTime - startTime);
 
                     // Display results
+                    const startDisplayTime = performance.now();
                     displaySolutions(solutions, elapsedMs);
+                    const endDisplayTime = performance.now();
+
+                    const elapsedDisplayMs = Math.round(endDisplayTime - startDisplayTime);
+                    console.log(`Displayed solutions in ${elapsedDisplayMs}ms`);
                 } catch (error) {
                     showError('Error solving puzzle: ' + error.message);
                     resultsDiv.style.display = 'none';

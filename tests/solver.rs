@@ -19,7 +19,7 @@ fn test_solver_basic() {
         "GAWKILY".to_string(),
     ];
     let wordlist = Wordlist::from_words(words);
-    let solver = Solver::new(game, wordlist);
+    let solver = Solver::new(game, wordlist, 10);
     let solutions = solver.solve();
 
     assert!(!solutions.is_empty());
