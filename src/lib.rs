@@ -1,4 +1,3 @@
-pub mod algorithmx;
 pub mod board;
 pub mod wordlist;
 pub mod solver;
