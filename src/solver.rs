@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::HashMap;
 use std::fmt;
 use crate::board::Board;
 use crate::wordlist::Wordlist;
@@ -22,31 +22,74 @@ impl fmt::Display for Solution {
     }
 }
 
+struct WordBitmap {
+    word: String,
+    bitmap: u32,
+}
+
 pub struct Solver {
-    game: Board,
-    possible_words: Vec<String>,
+    word_bitmaps: Vec<WordBitmap>,
+    words_by_first_letter: HashMap<char, Vec<usize>>,
+    all_letters_mask: u32,
 }
 
 impl Solver {
     pub fn new(game: Board, wordlist: Wordlist) -> Self {
         let possible_words = game.possible_words(&wordlist);
+
+        // Create letter-to-bit mapping
+        let mut letter_to_bit = HashMap::new();
+        let mut bit_index = 0;
+        for side in &game.sides {
+            for ch in side.chars() {
+                letter_to_bit.insert(ch, 1 << bit_index);
+                bit_index += 1;
+            }
+        }
+
+        // Calculate mask for all letters
+        let all_letters_mask = letter_to_bit.values().fold(0, |acc, &bit| acc | bit);
+
+        // Create word bitmaps
+        let word_bitmaps: Vec<WordBitmap> = possible_words
+            .iter()
+            .map(|word| {
+                let bitmap = word.chars().fold(0, |acc, ch| {
+                    acc | letter_to_bit.get(&ch).copied().unwrap_or(0)
+                });
+                WordBitmap {
+                    word: word.clone(),
+                    bitmap,
+                }
+            })
+            .collect();
+
+        // Index words by first letter
+        let mut words_by_first_letter: HashMap<char, Vec<usize>> = HashMap::new();
+        for (i, word_bitmap) in word_bitmaps.iter().enumerate() {
+            if let Some(first_char) = word_bitmap.word.chars().next() {
+                words_by_first_letter.entry(first_char).or_default().push(i);
+            }
+        }
+
         Solver {
-            game,
-            possible_words,
+            word_bitmaps,
+            words_by_first_letter,
+            all_letters_mask,
         }
     }
 
     pub fn solve(&self) -> Vec<Solution> {
-        self.solve_with_max_solutions(100)
+        self.solve_with_max_solutions(10000)
     }
 
     pub fn solve_with_max_solutions(&self, max_solutions: usize) -> Vec<Solution> {
         let mut solutions = Vec::new();
         
         // Try single word solutions first
-        for word in &self.possible_words {
-            if self.covers_all_letters(&[word]) {
-                solutions.push(Solution::new(vec![word.clone()]));
+        for word_bitmap in &self.word_bitmaps {
+            if word_bitmap.bitmap == self.all_letters_mask {
+                solutions.push(Solution::new(vec![word_bitmap.word.clone()]));
                 if solutions.len() >= max_solutions {
                     return solutions;
                 }
@@ -60,44 +103,53 @@ impl Solver {
         
         // Try two word solutions (O(n²))
         let mut two_word_solutions = Vec::new();
-        for word1 in &self.possible_words {
-            let last_char = word1.chars().last().unwrap();
-            
-            for word2 in &self.possible_words {
-                if word2.chars().next() == Some(last_char) {
-                    let word_pair = [word1, word2];
-                    if self.covers_all_letters(&word_pair) {
-                        two_word_solutions.push(Solution::new(vec![word1.clone(), word2.clone()]));
+        for word1_bitmap in &self.word_bitmaps {
+            let last_char = word1_bitmap.word.chars().last().unwrap();
+
+            if let Some(word2_indices) = self.words_by_first_letter.get(&last_char) {
+                for &word2_idx in word2_indices {
+                    let word2_bitmap = &self.word_bitmaps[word2_idx];
+                    let combined_bitmap = word1_bitmap.bitmap | word2_bitmap.bitmap;
+
+                    if combined_bitmap == self.all_letters_mask {
+                        two_word_solutions.push(Solution::new(vec![
+                            word1_bitmap.word.clone(),
+                            word2_bitmap.word.clone()
+                        ]));
                         if two_word_solutions.len() >= max_solutions {
                             break;
                         }
                     }
                 }
-            }
-            if two_word_solutions.len() >= max_solutions {
-                break;
+                if two_word_solutions.len() >= max_solutions {
+                    break;
+                }
             }
         }
         
         // Try three word solutions (O(n³) but limited to make it practical)
         let mut three_word_solutions = Vec::new();
         let remaining_slots = max_solutions.saturating_sub(two_word_solutions.len());
-        
-        'outer: for word1 in &self.possible_words {
-            let last_char1 = word1.chars().last().unwrap();
-            
-            for word2 in &self.possible_words {
-                if word2.chars().next() == Some(last_char1) {
-                    let last_char2 = word2.chars().last().unwrap();
-                    
-                    for word3 in &self.possible_words {
-                        if word3.chars().next() == Some(last_char2) {
-                            let word_trio = [word1, word2, word3];
-                            if self.covers_all_letters(&word_trio) {
+
+        'outer: for word1_bitmap in &self.word_bitmaps {
+            let last_char1 = word1_bitmap.word.chars().last().unwrap();
+
+            if let Some(word2_indices) = self.words_by_first_letter.get(&last_char1) {
+                for &word2_idx in word2_indices {
+                    let word2_bitmap = &self.word_bitmaps[word2_idx];
+                    let last_char2 = word2_bitmap.word.chars().last().unwrap();
+                    let combined_bitmap_12 = word1_bitmap.bitmap | word2_bitmap.bitmap;
+
+                    if let Some(word3_indices) = self.words_by_first_letter.get(&last_char2) {
+                        for &word3_idx in word3_indices {
+                            let word3_bitmap = &self.word_bitmaps[word3_idx];
+                            let combined_bitmap = combined_bitmap_12 | word3_bitmap.bitmap;
+
+                            if combined_bitmap == self.all_letters_mask {
                                 three_word_solutions.push(Solution::new(vec![
-                                    word1.clone(), 
-                                    word2.clone(), 
-                                    word3.clone()
+                                    word1_bitmap.word.clone(),
+                                    word2_bitmap.word.clone(),
+                                    word3_bitmap.word.clone()
                                 ]));
                                 if three_word_solutions.len() >= remaining_slots {
                                     break 'outer;
@@ -116,26 +168,6 @@ impl Solver {
         solutions
     }
     
-    fn covers_all_letters(&self, words: &[&String]) -> bool {
-        let mut covered_letters = HashSet::new();
-        
-        for word in words {
-            for ch in word.chars() {
-                covered_letters.insert(ch);
-            }
-        }
-        
-        // Check if we've covered all letters from all sides
-        for side in &self.game.sides {
-            for ch in side.chars() {
-                if !covered_letters.contains(&ch) {
-                    return false;
-                }
-            }
-        }
-        
-        true
-    }
 }
 
 #[cfg(test)]
@@ -152,28 +184,65 @@ mod tests {
     }
 
     #[test]
-    fn test_covers_all_letters() {
+    fn test_bitmap_coverage() {
         let sides = vec![
             "AB".to_string(),
             "CD".to_string(),
-            "EF".to_string(), 
+            "EF".to_string(),
             "GH".to_string()
         ];
         let game = Board::from_sides(sides).unwrap();
-        let wordlist = Wordlist { 
-            words: vec![], 
-            word_digraphs: std::collections::HashMap::new(),
-            valid_digraphs: std::collections::HashSet::new()
+
+        // Create a simple wordlist that includes all the digraphs these words need
+        // Since the game is AB/CD/EF/GH, we need valid cross-side digraphs
+        let mut word_digraphs = std::collections::HashMap::new();
+        let mut valid_digraphs = std::collections::HashSet::new();
+
+        // Add all valid digraphs from the game (cross-side pairs)
+        for digraph in &game.valid_digraphs {
+            valid_digraphs.insert(digraph.clone());
+        }
+
+        // For our test words, we need to pick ones that use valid cross-side digraphs
+        // Let's use simpler words that work: "AC" (A->C), "CE" (C->E), etc.
+        let test_words = ["AC", "CE", "EG"];
+        for word in test_words {
+            let mut digraphs = std::collections::HashSet::new();
+            let chars: Vec<char> = word.chars().collect();
+            for i in 0..chars.len()-1 {
+                let digraph = format!("{}{}", chars[i], chars[i+1]);
+                digraphs.insert(digraph);
+            }
+            word_digraphs.insert(word.to_string(), digraphs);
+        }
+
+        let wordlist = Wordlist {
+            words: test_words.iter().map(|&s| s.to_string()).collect(),
+            word_digraphs,
+            valid_digraphs
         };
         let solver = Solver::new(game, wordlist);
-        
-        let word1 = "ABCDEFGH".to_string();
-        assert!(solver.covers_all_letters(&[&word1]));
-        
-        let word2 = "ABCD".to_string();
-        assert!(!solver.covers_all_letters(&[&word2]));
-        
-        let word3 = "EFGH".to_string();
-        assert!(solver.covers_all_letters(&[&word2, &word3]));
+
+        // Test that all letters bitmap is correctly calculated
+        assert_eq!(solver.all_letters_mask, 0b11111111); // 8 bits for 8 letters
+
+        // Test that word bitmaps are correctly calculated
+        if let Some(word_ac) = solver.word_bitmaps.iter().find(|wb| wb.word == "AC") {
+            // A=bit0, C=bit2, so AC should be 0b00000101
+            assert_eq!(word_ac.bitmap, 0b00000101);
+        }
+
+        if let Some(word_ce) = solver.word_bitmaps.iter().find(|wb| wb.word == "CE") {
+            // C=bit2, E=bit4, so CE should be 0b00010100
+            assert_eq!(word_ce.bitmap, 0b00010100);
+        }
+
+        if let Some(word_eg) = solver.word_bitmaps.iter().find(|wb| wb.word == "EG") {
+            // E=bit4, G=bit6, so EG should be 0b01010000
+            assert_eq!(word_eg.bitmap, 0b01010000);
+        }
+
+        // Test that basic bitmap operations work
+        assert!(solver.word_bitmaps.len() > 0);
     }
 }

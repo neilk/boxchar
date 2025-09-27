@@ -1,6 +1,4 @@
 use boxchar::{board::Board, solver::Solver, wordlist::Wordlist}; // using our library!
-use boxchar::solverx::Game;
-use boxchar::solverx::SolverX;
 use clap::Parser;
 use log::{debug};
 use std::{collections::HashSet, path::Path};
@@ -134,24 +132,9 @@ fn main() -> std::io::Result<()> {
                 } else {
                     debug!("Found {} solutions.", solutions.len());
                     println!("--- Solutions from Solver ---");
-                    for solution in solutions.iter().take(10) {
+                    println!("Total solutions found: {}", solutions.len());
+                    for solution in solutions.iter() {
                         println!("{}", solution);
-                    }
-                }
-
-                debug!("\nSolving the puzzle again with SolverX...");
-                println!("--- Solutions from SolverX ---");
-                let game = Game::new(board_string, possible_words);
-                match SolverX::solve(&game) {
-                    Some(solutionsx) => {
-                        let sols = solutionsx.0;
-                        debug!("Found {} solutions with SolverX.", sols.len());
-                        for solutionx in sols.iter().take(10) {
-                            println!("{}", solutionx);
-                        }
-                    }
-                    None => {
-                        eprintln!("No solutions found");
                     }
                 }
             }
