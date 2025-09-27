@@ -80,94 +80,90 @@ impl Solver {
     }
 
     pub fn solve(&self) -> Vec<Solution> {
-        self.solve_with_max_solutions(10000)
+        self.solve_with_max_solutions(500)
     }
 
     pub fn solve_with_max_solutions(&self, max_solutions: usize) -> Vec<Solution> {
         let mut solutions = Vec::new();
-        
-        // Try single word solutions first
-        for word_bitmap in &self.word_bitmaps {
-            if word_bitmap.bitmap == self.all_letters_mask {
-                solutions.push(Solution::new(vec![word_bitmap.word.clone()]));
-                if solutions.len() >= max_solutions {
-                    return solutions;
-                }
+
+        // Try solutions of each exact length
+        for target_words in 1..=4 {
+            let mut current_path = Vec::new();
+            self.search_recursive(&mut current_path, 0, None, &mut solutions, max_solutions, target_words);
+
+            // Continue searching until we hit the solution limit
+            if solutions.len() >= max_solutions {
+                break;
             }
         }
-        
-        // If we found single word solutions, return them
-        if !solutions.is_empty() {
-            return solutions;
-        }
-        
-        // Try two word solutions (O(n²))
-        let mut two_word_solutions = Vec::new();
-        for word1_bitmap in &self.word_bitmaps {
-            let last_char = word1_bitmap.word.chars().last().unwrap();
 
-            if let Some(word2_indices) = self.words_by_first_letter.get(&last_char) {
-                for &word2_idx in word2_indices {
-                    let word2_bitmap = &self.word_bitmaps[word2_idx];
-                    let combined_bitmap = word1_bitmap.bitmap | word2_bitmap.bitmap;
-
-                    if combined_bitmap == self.all_letters_mask {
-                        two_word_solutions.push(Solution::new(vec![
-                            word1_bitmap.word.clone(),
-                            word2_bitmap.word.clone()
-                        ]));
-                        if two_word_solutions.len() >= max_solutions {
-                            break;
-                        }
-                    }
-                }
-                if two_word_solutions.len() >= max_solutions {
-                    break;
-                }
-            }
-        }
-        
-        // Try three word solutions (O(n³) but limited to make it practical)
-        let mut three_word_solutions = Vec::new();
-        let remaining_slots = max_solutions.saturating_sub(two_word_solutions.len());
-
-        'outer: for word1_bitmap in &self.word_bitmaps {
-            let last_char1 = word1_bitmap.word.chars().last().unwrap();
-
-            if let Some(word2_indices) = self.words_by_first_letter.get(&last_char1) {
-                for &word2_idx in word2_indices {
-                    let word2_bitmap = &self.word_bitmaps[word2_idx];
-                    let last_char2 = word2_bitmap.word.chars().last().unwrap();
-                    let combined_bitmap_12 = word1_bitmap.bitmap | word2_bitmap.bitmap;
-
-                    if let Some(word3_indices) = self.words_by_first_letter.get(&last_char2) {
-                        for &word3_idx in word3_indices {
-                            let word3_bitmap = &self.word_bitmaps[word3_idx];
-                            let combined_bitmap = combined_bitmap_12 | word3_bitmap.bitmap;
-
-                            if combined_bitmap == self.all_letters_mask {
-                                three_word_solutions.push(Solution::new(vec![
-                                    word1_bitmap.word.clone(),
-                                    word2_bitmap.word.clone(),
-                                    word3_bitmap.word.clone()
-                                ]));
-                                if three_word_solutions.len() >= remaining_slots {
-                                    break 'outer;
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        
-        // Combine solutions: two-word first, then three-word
-        solutions.extend(two_word_solutions);
-        solutions.extend(three_word_solutions);
-        
         solutions
     }
-    
+
+
+    fn search_recursive(
+        &self,
+        current_path: &mut Vec<String>,
+        covered_bitmap: u32,
+        last_char: Option<char>,
+        solutions: &mut Vec<Solution>,
+        max_solutions: usize,
+        target_words: usize,
+    ) {
+        // Early termination if we have enough solutions
+        if solutions.len() >= max_solutions {
+            return;
+        }
+
+        // Check if we've found a complete solution of the target length
+        if covered_bitmap == self.all_letters_mask && current_path.len() == target_words {
+            solutions.push(Solution::new(current_path.clone()));
+            return;
+        }
+
+        // Don't go deeper if we've hit the word limit
+        if current_path.len() >= target_words {
+            return;
+        }
+
+        // Determine which words we can try next
+        let word_indices: Vec<usize> = if let Some(ch) = last_char {
+            // Must start with the last character of the previous word
+            self.words_by_first_letter.get(&ch).map(|v| v.clone()).unwrap_or_default()
+        } else {
+            // First word - can be any word
+            (0..self.word_bitmaps.len()).collect()
+        };
+
+        for word_idx in word_indices {
+            let word_bitmap = &self.word_bitmaps[word_idx];
+            let new_bitmap = covered_bitmap | word_bitmap.bitmap;
+
+            // Only continue if this word adds new letters
+            if new_bitmap != covered_bitmap {
+                current_path.push(word_bitmap.word.clone());
+                let new_last_char = word_bitmap.word.chars().last();
+
+                self.search_recursive(
+                    current_path,
+                    new_bitmap,
+                    new_last_char,
+                    solutions,
+                    max_solutions,
+                    target_words,
+                );
+
+                current_path.pop();
+
+                // Early termination check
+                if solutions.len() >= max_solutions {
+                    return;
+                }
+            }
+        }
+    }
+
+
 }
 
 #[cfg(test)]
