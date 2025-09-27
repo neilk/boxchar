@@ -47,8 +47,8 @@ impl Solver {
             }
         }
 
-        // Calculate mask for all letters
-        let all_letters_mask = letter_to_bit.values().fold(0, |acc, &bit| acc | bit);
+        // Calculate mask for all letters, e.g. for 8 letters, this is 0b11111111
+        let all_letters_mask = 2u32.pow(bit_index) - 1;
 
         // Create word bitmaps
         let word_bitmaps: Vec<WordBitmap> = possible_words
