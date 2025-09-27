@@ -1,7 +1,5 @@
 use boxchar::board::Board;
 use boxchar::wordlist::Wordlist;
-use tempfile::NamedTempFile;
-use std::io::Write;
 
 mod common;
 use common::sides_from_strs;
@@ -25,11 +23,8 @@ fn test_possible_words() {
     let sides = sides_from_strs(&["ABC", "DEF", "GHI", "JKL"]);
     let game = Board::from_sides(sides).unwrap();
     
-    let wordlist_content = "ADGJ\nABCD\nXYZ\n";
-    let mut wordlist_file = NamedTempFile::new().unwrap();
-    writeln!(wordlist_file, "{}", wordlist_content.trim()).unwrap();
-    
-    let wordlist = Wordlist::from_path(wordlist_file.path()).unwrap();
+    let words: Vec<String> = ["ADGJ", "ABCD", "XYZ"].iter().map(|s| s.to_string()).collect();
+    let wordlist = Wordlist::from_words(words);
     let possible_words = game.possible_words(&wordlist);
     
     assert!(possible_words.contains(&"ADGJ".to_string()));
