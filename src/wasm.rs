@@ -1,5 +1,5 @@
 use wasm_bindgen::prelude::*;
-use crate::game::Game;
+use crate::board::Board;
 use crate::wordlist::Wordlist;
 use crate::solver::Solver;
 
@@ -19,11 +19,11 @@ macro_rules! console_log {
 pub fn solve_game(game_sides: Vec<String>, wordlist_words: Vec<String>) -> Vec<String> {
     console_log!("Solving game with {} sides and {} words", game_sides.len(), wordlist_words.len());
     
-    // Create the game from the provided sides
-    let game = match Game::from_sides(game_sides) {
-        Ok(game) => game,
+    // Create the board from the provided sides
+    let board = match Board::from_sides(game_sides) {
+        Ok(board) => board,
         Err(e) => {
-            console_log!("Error creating game: {}", e);
+            console_log!("Error creating board: {}", e);
             return vec![format!("Error: {}", e)];
         }
     };
@@ -32,7 +32,7 @@ pub fn solve_game(game_sides: Vec<String>, wordlist_words: Vec<String>) -> Vec<S
     let wordlist = Wordlist::from_words(wordlist_words);
     
     // Create solver and solve
-    let solver = Solver::new(game, wordlist);
+    let solver = Solver::new(board, wordlist);
     let solutions = solver.solve();
     
     console_log!("Found {} solutions", solutions.len());
