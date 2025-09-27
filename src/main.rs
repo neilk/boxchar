@@ -107,9 +107,6 @@ fn main() -> std::io::Result<()> {
     debug!("Valid digraphs in this game:");
     debug!("{}", format_valid_digraphs(&board.valid_digraphs));
 
-    let board_string = board.sides.join("");
-
-
     match Wordlist::from_path(wordlist_path) {
         Ok(wordlist) => {
             debug!("Successfully loaded wordlist:");
