@@ -41,6 +41,15 @@ fn test_duplicate_letters() {
 }
 
 #[test]
+fn test_duplicate_letters_same_side() {
+    let sides = sides_from_strs(&["ABC", "DEF", "GHI", "JKJ"]); // 'J' appears twice on the same side
+    let result = Board::from_sides(sides);
+    
+    assert!(result.is_err());
+    assert!(result.unwrap_err().to_string().contains("Duplicate letter"));
+}
+
+#[test]
 fn test_lowercase_letters() {
     let sides = sides_from_strs(&["ABC", "def", "GHI", "JKL"]);
     let result = Board::from_sides(sides);

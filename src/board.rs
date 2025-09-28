@@ -74,12 +74,14 @@ impl Board {
                 }
 
                 if let Some(previous_side) = seen_chars.insert(c, side_num) {
+                    let error = if previous_side == side_num {
+                        format!("Duplicate letter '{}' found on side {}", c, side_num)
+                    } else {
+                        format!("Duplicate letter '{}' found on sides {} and {}", c, previous_side, side_num)
+                    };
                     return Err(io::Error::new(
                         io::ErrorKind::InvalidData,
-                        format!(
-                            "Duplicate letter '{}' found on sides {} and {}",
-                            c, previous_side, side_num
-                        ),
+                        error,
                     ));
                 }
             }
