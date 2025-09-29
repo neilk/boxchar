@@ -2,7 +2,7 @@ use clap::Parser;
 use std::cmp::{min, Ordering};
 use std::path::Path;
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::{BufRead, BufReader, Lines, Result};
 
 /**
  * Build the standard word-list for boxchar, which will be a list of words which are playable, along with
@@ -57,27 +57,34 @@ fn is_playable_word(word: &str) -> bool {
     if word.len() < MINIMUM_LENGTH {
         return false;
     } 
-    
-    !word.chars().zip(word.chars().skip(1)).any(|(a, b)| a == b)
+
+    word.chars().try_fold('\0', |prev, curr| {
+        if prev == curr { 
+            None
+        } else {
+            Some(curr)
+        }
+    }).is_some()
+}
+
+
+fn path_string_to_line_iterator(path_string: &str) -> Result<Lines<BufReader<File>>> {
+    let path = Path::new(&path_string);
+    let file = File::open(path)?;
+    let reader = BufReader::new(file);
+    let lines = reader.lines();
+    Ok(lines)
 }
 
 fn main() -> std::io::Result<()> {
     env_logger::init();
     let args = Args::parse();
 
-    let scrabble_path = Path::new(&args.scrabble);
-    let frequencies_path = Path::new(&args.frequencies);
-
-    let scrabble_file = File::open(scrabble_path)?;
-    let scrabble_reader = BufReader::new(scrabble_file);
-    let mut scrabble_lines = scrabble_reader.lines();
-
-    let frequencies_file = File::open(frequencies_path)?;
-    let frequencies_reader = BufReader::new(frequencies_file);
-    let mut frequencies_lines = frequencies_reader.lines();
+    let mut scrabble_lines = path_string_to_line_iterator(&args.scrabble)?;
+    let mut frequencies_lines = path_string_to_line_iterator(&args.frequencies)?;
 
     let mut frequencies_line_current = frequencies_lines.next();
-    let mut scrabble_line_current = frequencies_lines.next();
+    let mut scrabble_line_current = scrabble_lines.next();
 
     // Iterate through both of these very large files at once
     while let (Some(frequencies_line), Some(scrabble_line)) = (&frequencies_line_current, &scrabble_line_current) {
@@ -97,7 +104,7 @@ fn main() -> std::io::Result<()> {
                     println!("{} {}", frequencies_word, frequency_score);
                 }
                 frequencies_line_current = frequencies_lines.next();
-                scrabble_line_current = frequencies_lines.next();
+                scrabble_line_current = scrabble_lines.next();
             }
             Ordering::Less => {
                 frequencies_line_current = frequencies_lines.next();
