@@ -1,7 +1,10 @@
 Now that we have frequency scores: 
 
 - implement sorting by score
-  - WIP - works when we compile for the web, but must fix the tests in solver.rs 
+  - perhaps consider the maximum commonness in the N-tuple and then the length of the N-tuple.
+  - eliminate paths that exist in currrent solutions then making long solutions. e.g. TEXTURIZED-DWARVES should preclude SET-TEXTURIZED-DWARVES
+    - could keep an trie of words by index in the big wordlist, IDK.
+    - the simplest way without looking things up again might be to check if, once a solution is found, it is still a solution if you remove the prepending words.
 
 - when searching for solutions, cut off the dictionary iteration to a shorter number, if/when we are going deeper.
     - since we have sorted all of this, we can cache those sub-dictionaries somehow as simple integers, the end index to stop at.

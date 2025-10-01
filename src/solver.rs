@@ -173,15 +173,17 @@ mod tests {
 
     #[test]
     fn test_solution_display() {
+        let words = ["word", "ocean", "dojo"];
+        let word_strings = words.iter().map(|&s| s.to_string()).collect();
+        let dictionary = Dictionary::from_strings(word_strings);
         let solution = Solution::new(vec![
-            "word1".to_string(),
-            "word2".to_string(),
-            "word3".to_string(),
+            dictionary.words[0].clone(),
+            dictionary.words[2].clone(),
+            dictionary.words[1].clone(),
         ]);
-        assert_eq!(solution.to_string(), "word1-word2-word3");
-
-        let single_word = Solution::new(vec!["hello".to_string()]);
-        assert_eq!(single_word.to_string(), "hello");
+        assert_eq!(solution.to_string(), "word-dojo-ocean");
+        let single_word = Solution::new(vec![dictionary.words[0].clone()]);
+        assert_eq!(single_word.to_string(), "word");
     }
 
     #[test]
@@ -214,17 +216,17 @@ mod tests {
         assert_eq!(solver.all_letters_mask, 0b11111111); // 8 bits for 8 letters
 
         // Test that word bitmaps are correctly calculated
-        if let Some(word_ac) = solver.word_bitmaps.iter().find(|wb| wb.word == "AC") {
+        if let Some(word_ac) = solver.word_bitmaps.iter().find(|wb| wb.word.word == "AC") {
             // A=bit0, C=bit2, so AC should be 0b00000101
             assert_eq!(word_ac.bitmap, 0b00000101);
         }
 
-        if let Some(word_ce) = solver.word_bitmaps.iter().find(|wb| wb.word == "CE") {
+        if let Some(word_ce) = solver.word_bitmaps.iter().find(|wb| wb.word.word == "CE") {
             // C=bit2, E=bit4, so CE should be 0b00010100
             assert_eq!(word_ce.bitmap, 0b00010100);
         }
 
-        if let Some(word_eg) = solver.word_bitmaps.iter().find(|wb| wb.word == "EG") {
+        if let Some(word_eg) = solver.word_bitmaps.iter().find(|wb| wb.word.word == "EG") {
             // E=bit4, G=bit6, so EG should be 0b01010000
             assert_eq!(word_eg.bitmap, 0b01010000);
         }
