@@ -1,45 +1,26 @@
 use boxchar::board::Board;
-use boxchar::wordlist::Wordlist;
+use boxchar::wordlist::Dictionary;
 
 mod common;
 use common::sides_from_strs;
 
 #[test]
-fn test_extract_digraphs_simple() {
-    use std::collections::HashSet;
-    use boxchar::wordlist::extract_digraphs;
-    
-    let expected_digraphs: HashSet<String> = ["PI", "IR", "RA", "AT", "TE"]
-        .iter()
-        .map(|s| s.to_string())
-        .collect();
-    
-    let actual_digraphs = extract_digraphs("PIRATE");
-    assert_eq!(actual_digraphs, expected_digraphs);
-}
+fn test_playable_words() {
+    let sides = sides_from_strs(&["abc", "def", "gho", "jkl"]);
+    let board = Board::from_sides(sides).unwrap();
 
-#[test]
-fn test_possible_words() {
-    let sides = sides_from_strs(&["ABC", "DEF", "GHI", "JKL"]);
-    let game = Board::from_sides(sides).unwrap();
-    
-    let words: Vec<String> = ["ADGJ", "ABCD", "XYZ"].iter().map(|s| s.to_string()).collect();
-    let wordlist = Wordlist::from_words(words);
-    let possible_words = game.possible_words(&wordlist);
-    
-    assert!(possible_words.contains(&"ADGJ".to_string()));
-    assert!(!possible_words.contains(&"ABCD".to_string()));
-    assert!(!possible_words.contains(&"XYZ".to_string()));
-}
+    let word_strings: Vec<String> = Vec::from([
+        "dojo".to_string(),  // possible
+        "abode".to_string(), // impossible, "ab" are on the same side
+        "joke".to_string(),  // possible
+        "egg".to_string()    // impossible, repeated letter
+    ]);
+    let dictionary = Dictionary::from_strings(word_strings);
+    let playable_dictionary = board.playable_dictionary(&dictionary);
 
-#[test]
-fn test_possible_words_wordlist_file() {
-    let sides = sides_from_strs(&["RNY", "ADM", "IUX", "TOZ"]);
-    let game = Board::from_sides(sides).unwrap();
-    let wordlist = Wordlist::from_path("data/wordlist_test.txt").unwrap();
-    
-    let possible_words = game.possible_words(&wordlist);
-    
-    assert!(possible_words.contains(&"RANDOM".to_string()));
-    assert!(possible_words.contains(&"RAINOUT".to_string()));
+    let playable_words: Vec<String> = playable_dictionary.words.iter().map(|w| w.word.clone()).collect();
+    assert!(playable_words.contains(&"dojo".to_string()));
+    assert!(!playable_words.contains(&"abode".to_string()));
+    assert!(playable_words.contains(&"joke".to_string()));
+    assert!(!playable_words.contains(&"egg".to_string()));
 }

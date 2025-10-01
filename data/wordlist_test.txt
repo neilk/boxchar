@@ -1,10 +1,10 @@
-ADJUNCTIVE
-CONCERNED
-HYDROGRAPHER
-PAGANIST
-RAINOUT
-RANDOM
-RESET
-REVERBERANT
-SKIRMISH
-TESTATOR
+adjunctive 12
+concerned 13
+hydrographer 14
+paganist 11
+rainout 20
+random 21
+reset 22
+reverberant 15
+skirmish 18
+testator 25

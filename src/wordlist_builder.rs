@@ -117,3 +117,26 @@ fn main() -> std::io::Result<()> {
 
     Ok(())
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_is_playable_word() {    
+        // adjacent repeated letters
+        assert!(!is_playable_word("peer"));  
+        assert!(!is_playable_word("book"));
+        assert!(!is_playable_word("coffee"));
+        assert!(!is_playable_word("llama"));
+
+        // too short
+        assert!(!is_playable_word("an"));
+        assert!(!is_playable_word(""));
+
+        // okay
+        assert!(is_playable_word("dojo"));
+        assert!(is_playable_word("word"));
+    }
+}

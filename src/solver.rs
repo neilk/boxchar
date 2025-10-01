@@ -1,7 +1,7 @@
+use crate::board::Board;
+use crate::wordlist::Dictionary;
 use std::collections::HashMap;
 use std::fmt;
-use crate::board::Board;
-use crate::wordlist::Wordlist;
 
 #[derive(Debug, Clone)]
 pub struct Solution {
@@ -31,17 +31,15 @@ pub struct Solver {
     word_bitmaps: Vec<WordBitmap>,
     words_by_first_letter: HashMap<char, Vec<usize>>,
     all_letters_mask: u32,
-    max_solutions: usize,  // this is usize for convenience in comparisons to length(), but set from u16
+    max_solutions: usize, // this is usize for convenience in comparisons to length(), but set from u16
 }
 
 impl Solver {
-    pub fn new(game: Board, wordlist: Wordlist, max_solutions: u16) -> Self {
-        let possible_words = game.possible_words(&wordlist);
-
+    pub fn new(board: Board, dictionary: Dictionary, max_solutions: u16) -> Self {
         // Create letter-to-bit mapping
         let mut letter_to_bit = HashMap::new();
         let mut bit_index = 0;
-        for side in &game.sides {
+        for side in &board.sides {
             for ch in side.chars() {
                 letter_to_bit.insert(ch, 1 << bit_index);
                 bit_index += 1;
@@ -51,10 +49,13 @@ impl Solver {
         // Calculate mask for all letters, e.g. for 8 letters, this is 0b11111111
         let all_letters_mask = 2u32.pow(bit_index) - 1;
 
-        // Create word bitmaps
-        let word_bitmaps: Vec<WordBitmap> = possible_words
+        // Create word bitmaps for all words playable
+        let board_dictionary = board.playable_dictionary(&dictionary);
+        let word_bitmaps: Vec<WordBitmap> = board_dictionary
+            .words
             .iter()
-            .map(|word| {
+            .map(|w| {
+                let word = &w.word;
                 let bitmap = word.chars().fold(0, |acc, ch| {
                     acc | letter_to_bit.get(&ch).copied().unwrap_or(0)
                 });
@@ -98,7 +99,6 @@ impl Solver {
         solutions
     }
 
-
     fn search_recursive(
         &self,
         current_path: &mut Vec<String>,
@@ -126,7 +126,10 @@ impl Solver {
         // Determine which words we can try next
         let word_indices: Vec<usize> = if let Some(ch) = last_char {
             // Must start with the last character of the previous word
-            self.words_by_first_letter.get(&ch).map(|v| v.clone()).unwrap_or_default()
+            self.words_by_first_letter
+                .get(&ch)
+                .map(|v| v.clone())
+                .unwrap_or_default()
         } else {
             // First word - can be any word
             (0..self.word_bitmaps.len()).collect()
@@ -158,8 +161,6 @@ impl Solver {
             }
         }
     }
-
-
 }
 
 #[cfg(test)]
@@ -168,52 +169,42 @@ mod tests {
 
     #[test]
     fn test_solution_display() {
-        let solution = Solution::new(vec!["WORD1".to_string(), "WORD2".to_string(), "WORD3".to_string()]);
-        assert_eq!(solution.to_string(), "WORD1-WORD2-WORD3");
-        
-        let single_word = Solution::new(vec!["HELLO".to_string()]);
-        assert_eq!(single_word.to_string(), "HELLO");
+        let solution = Solution::new(vec![
+            "word1".to_string(),
+            "word2".to_string(),
+            "word3".to_string(),
+        ]);
+        assert_eq!(solution.to_string(), "word1-word2-word3");
+
+        let single_word = Solution::new(vec!["hello".to_string()]);
+        assert_eq!(single_word.to_string(), "hello");
     }
 
     #[test]
     fn test_bitmap_coverage() {
         let sides = vec![
-            "AB".to_string(),
-            "CD".to_string(),
-            "EF".to_string(),
-            "GH".to_string()
+            "ab".to_string(),
+            "cd".to_string(),
+            "ef".to_string(),
+            "gh".to_string(),
         ];
         let game = Board::from_sides(sides).unwrap();
 
         // Create a simple wordlist that includes all the digraphs these words need
         // Since the game is AB/CD/EF/GH, we need valid cross-side digraphs
-        let mut word_digraphs = std::collections::HashMap::new();
         let mut valid_digraphs = std::collections::HashSet::new();
 
         // Add all valid digraphs from the game (cross-side pairs)
-        for digraph in &game.valid_digraphs {
+        for digraph in &game.digraphs {
             valid_digraphs.insert(digraph.clone());
         }
 
         // For our test words, we need to pick ones that use valid cross-side digraphs
         // Let's use simpler words that work: "AC" (A->C), "CE" (C->E), etc.
-        let test_words = ["AC", "CE", "EG"];
-        for word in test_words {
-            let mut digraphs = std::collections::HashSet::new();
-            let chars: Vec<char> = word.chars().collect();
-            for i in 0..chars.len()-1 {
-                let digraph = format!("{}{}", chars[i], chars[i+1]);
-                digraphs.insert(digraph);
-            }
-            word_digraphs.insert(word.to_string(), digraphs);
-        }
-
-        let wordlist = Wordlist {
-            words: test_words.iter().map(|&s| s.to_string()).collect(),
-            word_digraphs,
-            valid_digraphs
-        };
-        let solver = Solver::new(game, wordlist, 10);
+        let test_words = ["ac", "ce", "eg"];
+        let test_word_strings = test_words.iter().map(|&s| s.to_string()).collect();
+        let dictionary = Dictionary::from_strings(test_word_strings);        
+        let solver = Solver::new(game, dictionary, 10);
 
         // Test that all letters bitmap is correctly calculated
         assert_eq!(solver.all_letters_mask, 0b11111111); // 8 bits for 8 letters

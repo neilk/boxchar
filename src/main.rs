@@ -1,6 +1,6 @@
-use boxchar::{board::Board, solver::Solver, wordlist::Wordlist}; // using our library!
+use boxchar::{board::Board, solver::Solver, wordlist::Dictionary}; // using our library!
 use clap::Parser;
-use log::{debug};
+use log::debug;
 use std::{collections::HashSet, path::Path};
 
 #[derive(Parser)]
@@ -28,8 +28,8 @@ fn validate_game_spec(game_spec: &str) -> Result<Vec<String>, String> {
         }
     }
 
-    // Split by comma and convert to uppercase
-    let sides: Vec<String> = game_spec.split(',').map(|s| s.to_uppercase()).collect();
+    // Split by comma and convert to lowercase
+    let sides: Vec<String> = game_spec.split(',').map(|s| s.to_lowercase()).collect();
 
     if sides.is_empty() {
         return Err("Game specification cannot be empty".to_string());
@@ -107,12 +107,12 @@ fn main() -> std::io::Result<()> {
     }
     debug!(
         "Number of valid digraphs in this game: {}",
-        board.valid_digraphs.len()
+        board.digraphs.len()
     );
     debug!("Valid digraphs in this game:");
-    debug!("{}", format_valid_digraphs(&board.valid_digraphs));
+    debug!("{}", format_valid_digraphs(&board.digraphs));
 
-    match Wordlist::from_path(wordlist_path) {
+    match Dictionary::from_path(wordlist_path) {
         Ok(wordlist) => {
             solve(board, wordlist, max_solutions);
         }
@@ -122,16 +122,16 @@ fn main() -> std::io::Result<()> {
     Ok(())
 }
 
-fn solve(board: Board, wordlist: Wordlist, max_solutions: u16) {
+fn solve(board: Board, wordlist: Dictionary, max_solutions: u16) {
     debug!("Successfully loaded wordlist:");
     debug!("Number of words: {}", wordlist.words.len());
     {
-        let possible_words = board.possible_words(&wordlist);
+        let board_dictionary = board.playable_dictionary(&wordlist);
         debug!("\nFirst 10 possible words for this game:");
-        for word in possible_words.iter().take(10) {
-            debug!("  {}", word);
+        for w in board_dictionary.words.iter().take(10) {
+            debug!("  {}", w.word);
         }
-        debug!("Total possible words: {}", possible_words.len());
+        debug!("Total possible words: {}", board_dictionary.words.len());
 
         // Run the solver
         debug!("\nSolving the puzzle...");
