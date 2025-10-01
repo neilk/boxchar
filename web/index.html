@@ -179,7 +179,8 @@
         async function loadDictionary() {
             try {
                 const response = await fetch('./dictionary.txt');
-                dictionary = await response.text();
+                const arrayBuffer = await response.arrayBuffer();
+                dictionary = new Uint8Array(arrayBuffer);
                 return dictionary;
             } catch (error) {
                 console.error('Failed to load dictionary:', error);
