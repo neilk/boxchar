@@ -87,6 +87,15 @@ impl Dictionary {
         Self::from_words(words)
     }
 
+    pub fn from_bytes(data: &[u8]) -> Result<Self, String> {
+        // Convert bytes to string and use existing text parsing
+        // This provides a foundation for future binary format support
+        match std::str::from_utf8(data) {
+            Ok(text) => Ok(Self::from_text(text)),
+            Err(e) => Err(format!("Invalid UTF-8 data: {}", e)),
+        }
+    }
+
     pub fn from_path<P: AsRef<Path>>(path: P) -> io::Result<Self> {
         let file = File::open(path)?;
         let reader = BufReader::new(file);
@@ -119,6 +128,32 @@ mod tests {
 
         let actual_digraphs = extract_digraphs(&"PIRATE".to_string());
         assert_eq!(actual_digraphs, expected_digraphs);
+    }
+
+    #[test]
+    fn test_from_bytes_valid_utf8() {
+        let text_data = "hello 25\nworld 30\ntest 15\n";
+        let bytes = text_data.as_bytes();
+
+        let dictionary = Dictionary::from_bytes(bytes).expect("Should parse valid UTF-8");
+
+        assert_eq!(dictionary.words.len(), 3);
+        assert_eq!(dictionary.words[0].word, "hello");
+        assert_eq!(dictionary.words[0].frequency, 25);
+        assert_eq!(dictionary.words[1].word, "world");
+        assert_eq!(dictionary.words[1].frequency, 30);
+        assert_eq!(dictionary.words[2].word, "test");
+        assert_eq!(dictionary.words[2].frequency, 15);
+    }
+
+    #[test]
+    fn test_from_bytes_invalid_utf8() {
+        let invalid_bytes = vec![0xFF, 0xFE, 0xFD]; // Invalid UTF-8
+
+        let result = Dictionary::from_bytes(&invalid_bytes);
+
+        assert!(result.is_err());
+        assert!(result.unwrap_err().contains("Invalid UTF-8"));
     }
 }
 
