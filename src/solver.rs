@@ -1,5 +1,5 @@
 use crate::board::Board;
-use crate::wordlist::Dictionary;
+use crate::dictionary::Dictionary;
 use std::collections::HashMap;
 use std::fmt;
 
@@ -203,7 +203,7 @@ mod tests {
         // Let's use simpler words that work: "AC" (A->C), "CE" (C->E), etc.
         let test_words = ["ac", "ce", "eg"];
         let test_word_strings = test_words.iter().map(|&s| s.to_string()).collect();
-        let dictionary = Dictionary::from_strings(test_word_strings);        
+        let dictionary = Dictionary::from_strings(test_word_strings);
         let solver = Solver::new(game, dictionary, 10);
 
         // Test that all letters bitmap is correctly calculated

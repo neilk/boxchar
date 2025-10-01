@@ -1,5 +1,5 @@
 pub mod board;
-pub mod wordlist;
+pub mod dictionary;
 pub mod solver;
 
 #[cfg(target_arch = "wasm32")]

@@ -1,4 +1,4 @@
-use boxchar::{board::Board, solver::Solver, wordlist::Dictionary}; // using our library!
+use boxchar::{board::Board, solver::Solver, dictionary::Dictionary}; // using our library!
 use clap::Parser;
 use log::debug;
 use std::{collections::HashSet, path::Path};

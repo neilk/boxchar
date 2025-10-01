@@ -1,6 +1,6 @@
 use boxchar::board::Board;
 use boxchar::solver::Solver;
-use boxchar::wordlist::Dictionary;
+use boxchar::dictionary::Dictionary;
 
 mod common;
 use common::sides_from_strs;

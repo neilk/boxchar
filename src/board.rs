@@ -1,4 +1,4 @@
-use crate::wordlist::Dictionary;
+use crate::dictionary::Dictionary;
 use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{self, BufRead, BufReader};
@@ -16,10 +16,7 @@ impl Board {
         Self::validate_sides_content(&sides)?;
 
         let digraphs = Self::playable_digraphs(&sides);
-        let game = Board {
-            sides,
-            digraphs
-        };
+        let game = Board { sides, digraphs };
 
         Ok(game)
     }
