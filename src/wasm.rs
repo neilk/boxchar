@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 use crate::board::Board;
-use crate::wordlist::Wordlist;
+use crate::dictionary::Dictionary;
 use crate::solver::Solver;
 
 // Import the `console.log` function from the browser's Web API
@@ -29,7 +29,7 @@ pub fn solve_game(game_sides: Vec<String>, wordlist_words: Vec<String>, max_solu
     };
     
     // Create wordlist from provided words
-    let wordlist = Wordlist::from_words(wordlist_words);
+    let dictionary = Dictionary::from_words(wordlist_words);
     
     // Create solver and solve
     let solver = Solver::new(board, wordlist, max_solutions);

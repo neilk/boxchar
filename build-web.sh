@@ -14,7 +14,7 @@ mkdir -p web
 # Copy files to web directory
 echo "📋 Copying files..."
 cp -r pkg web/
-cp data/wordlist.txt web/
+cp data/dictionary.txt web/
 
 echo "✅ Web build complete!"
 echo "🚀 Files are ready in the 'web/' directory"
