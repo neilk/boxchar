@@ -64,6 +64,29 @@ impl Dictionary {
         Self::from_words(word_frequencies)
     }
 
+    fn parse_word_line(line: &str) -> Option<Word> {
+        let mut parts = line.trim().split_whitespace();
+        match (parts.next(), parts.next()) {
+            (Some(word_str), Some(frequency_str)) => match frequency_str.parse::<i8>() {
+                Ok(frequency) => Some(Word {
+                    word: word_str.to_string(),
+                    frequency,
+                    digraphs: extract_digraphs(&word_str.to_string()),
+                }),
+                Err(_) => None,
+            },
+            _ => None,
+        }
+    }
+
+    pub fn from_text(text: &str) -> Self {
+        let words: Vec<Word> = text
+            .lines()
+            .filter_map(Self::parse_word_line)
+            .collect();
+        Self::from_words(words)
+    }
+
     pub fn from_path<P: AsRef<Path>>(path: P) -> io::Result<Self> {
         let file = File::open(path)?;
         let reader = BufReader::new(file);
@@ -72,24 +95,10 @@ impl Dictionary {
             .map_while(Result::ok)
             .enumerate()
             .filter_map(|(line_num, s)| {
-                let mut parts = s.split_whitespace();
-                match (parts.next(), parts.next()) {
-                    (Some(word_str), Some(frequency_str)) => match frequency_str.parse::<i8>() {
-                        Ok(frequency) => Some(Word {
-                            word: word_str.to_string(),
-                            frequency,
-                            digraphs: extract_digraphs(&word_str.to_string()),
-                        }),
-                        Err(_) => {
-                            eprintln!("Invalid format on line {}: {}", line_num + 1, s);
-                            None
-                        }
-                    },
-                    _ => {
-                        eprintln!("Invalid format on line {}: {}", line_num + 1, s);
-                        None
-                    }
-                }
+                Self::parse_word_line(&s).or_else(|| {
+                    eprintln!("Invalid format on line {}: {}", line_num + 1, s);
+                    None
+                })
             })
             .collect();
         Ok(Self::from_words(words))

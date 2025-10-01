@@ -180,8 +180,9 @@
             try {
                 const response = await fetch('./dictionary.txt');
                 const text = await response.text();
-                dictionary = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
-                console.log(`Loaded ${dictionary.length} words from dictionary`);
+                dictionary = text;
+                const lineCount = text.split('\n').filter(line => line.trim().length > 0).length;
+                console.log(`Loaded dictionary with ${lineCount} entries`);
                 return dictionary;
             } catch (error) {
                 console.error('Failed to load dictionary:', error);
@@ -275,7 +276,7 @@
                 return;
             }
 
-            const sides = [side1, side2, side3, side4];
+            const sides = [side1, side2, side3, side4].map(s => s.toLowerCase());
 
             // Show loading state
             const solveBtn = document.getElementById('solveBtn');
@@ -295,7 +296,7 @@
                     // Start timer
                     const startTime = performance.now();
 
-                    // Call the synchronous WASM function with the loaded wordlist
+                    // Call the synchronous WASM function with the loaded dictionary text
                     const solutions = solve_game(sides, dictionary, maxSolutions);
 
                     // Calculate elapsed time
