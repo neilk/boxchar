@@ -171,34 +171,42 @@
     </div>
 
     <script type="module">
-        import init, { solve_game } from './pkg/boxchar.js';
+        import init, { solve_game, initialize_dictionary } from './pkg/boxchar.js';
         
         let wasm = null;
-        let dictionary = null;
-        
-        async function loadDictionary() {
+        let dictionaryInitialized = false;
+
+        async function loadAndInitializeDictionary() {
             try {
                 const response = await fetch('./dictionary.txt');
                 const arrayBuffer = await response.arrayBuffer();
-                dictionary = new Uint8Array(arrayBuffer);
-                return dictionary;
+                const dictionaryData = new Uint8Array(arrayBuffer);
+
+                console.log(`Loaded dictionary data: ${dictionaryData.length} bytes`);
+
+                // Initialize the dictionary in WASM
+                await initialize_dictionary(dictionaryData);
+                dictionaryInitialized = true;
+
+                console.log('Dictionary initialized in WASM');
+                return true;
             } catch (error) {
-                console.error('Failed to load dictionary:', error);
-                throw new Error('Failed to load dictionary');
+                console.error('Failed to load and initialize dictionary:', error);
+                throw new Error('Failed to initialize dictionary: ' + error.message);
             }
         }
         
         async function run() {
             try {
-                // Load WASM and wordlist in parallel
-                const [wasmModule, loadedDictionary] = await Promise.all([
+                // Load WASM and initialize dictionary in parallel
+                const [wasmModule] = await Promise.all([
                     init(),
-                    loadDictionary()
+                    loadAndInitializeDictionary()
                 ]);
-                
+
                 wasm = wasmModule;
-                console.log('WASM module and dictionary loaded');
-                
+                console.log('WASM module loaded and dictionary initialized');
+
                 // Enable the solve button once everything is loaded
                 document.getElementById('solveBtn').disabled = false;
                 document.getElementById('solveBtn').textContent = 'Solve Puzzle';
@@ -252,7 +260,7 @@
         }
         
         window.solvePuzzle = function() {
-            if (!wasm || !dictionary) {
+            if (!wasm || !dictionaryInitialized) {
                 showError('Solver not ready yet. Please wait and try again.');
                 return;
             }
@@ -294,8 +302,8 @@
                     // Start timer
                     const startTime = performance.now();
 
-                    // Call the synchronous WASM function with the loaded dictionary text
-                    const solutions = solve_game(sides, dictionary, maxSolutions);
+                    // Call the synchronous WASM function using the pre-initialized dictionary
+                    const solutions = solve_game(sides, maxSolutions);
 
                     // Calculate elapsed time
                     const endTime = performance.now();
