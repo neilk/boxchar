@@ -1,29 +1,34 @@
 use crate::board::Board;
-use crate::dictionary::Dictionary;
+use crate::dictionary::{Dictionary, Word};
 use std::collections::HashMap;
 use std::fmt;
 
 #[derive(Debug, Clone)]
 pub struct Solution {
-    pub words: Vec<String>,
+    pub words: Vec<Word>,
     pub score: usize,
 }
 
 impl Solution {
-    pub fn new(words: Vec<String>) -> Self {
-        let score = words.len();
+    pub fn new(words: Vec<Word>) -> Self {
+        let score: usize = words.iter().fold(0usize, |acc, w| acc + w.frequency as usize);
         Solution { words, score }
     }
 }
 
 impl fmt::Display for Solution {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.words.join("-"))
+        let s = self.words
+            .iter()
+            .map(|w| w.word.as_str())
+            .collect::<Vec<&str>>()
+            .join("-");
+        write!(f, "{}", s)
     }
 }
 
 struct WordBitmap {
-    word: String,
+    word: Word,
     bitmap: u32,
 }
 
@@ -54,9 +59,8 @@ impl Solver {
         let word_bitmaps: Vec<WordBitmap> = board_dictionary
             .words
             .iter()
-            .map(|w| {
-                let word = &w.word;
-                let bitmap = word.chars().fold(0, |acc, ch| {
+            .map(|word| {
+                let bitmap = word.word.chars().fold(0, |acc, ch| {
                     acc | letter_to_bit.get(&ch).copied().unwrap_or(0)
                 });
                 WordBitmap {
@@ -69,7 +73,7 @@ impl Solver {
         // Index words by first letter
         let mut words_by_first_letter: HashMap<char, Vec<usize>> = HashMap::new();
         for (i, word_bitmap) in word_bitmaps.iter().enumerate() {
-            if let Some(first_char) = word_bitmap.word.chars().next() {
+            if let Some(first_char) = word_bitmap.word.word.chars().next() {
                 words_by_first_letter.entry(first_char).or_default().push(i);
             }
         }
@@ -101,7 +105,7 @@ impl Solver {
 
     fn search_recursive(
         &self,
-        current_path: &mut Vec<String>,
+        current_path: &mut Vec<Word>,
         covered_bitmap: u32,
         last_char: Option<char>,
         solutions: &mut Vec<Solution>,
@@ -142,7 +146,7 @@ impl Solver {
             // Only continue if this word adds new letters
             if new_bitmap != covered_bitmap {
                 current_path.push(word_bitmap.word.clone());
-                let new_last_char = word_bitmap.word.chars().last();
+                let new_last_char = word_bitmap.word.word.chars().last();
 
                 self.search_recursive(
                     current_path,
