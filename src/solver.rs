@@ -35,7 +35,7 @@ pub struct Solver {
 }
 
 impl Solver {
-    pub fn new(board: Board, dictionary: Dictionary, max_solutions: u16) -> Self {
+    pub fn new(board: Board, dictionary: &Dictionary, max_solutions: u16) -> Self {
         // Create letter-to-bit mapping
         let mut letter_to_bit = HashMap::new();
         let mut bit_index = 0;
@@ -204,7 +204,7 @@ mod tests {
         let test_words = ["ac", "ce", "eg"];
         let test_word_strings = test_words.iter().map(|&s| s.to_string()).collect();
         let dictionary = Dictionary::from_strings(test_word_strings);
-        let solver = Solver::new(game, dictionary, 10);
+        let solver = Solver::new(game, &dictionary, 10);
 
         // Test that all letters bitmap is correctly calculated
         assert_eq!(solver.all_letters_mask, 0b11111111); // 8 bits for 8 letters

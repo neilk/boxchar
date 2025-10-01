@@ -27,7 +27,7 @@ pub struct Word {
     pub digraphs: HashSet<String>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct Dictionary {
     pub words: Vec<Word>,
     pub digraphs: HashSet<String>,

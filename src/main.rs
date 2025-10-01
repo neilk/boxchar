@@ -135,7 +135,7 @@ fn solve(board: Board, dictionary: Dictionary, max_solutions: u16) {
 
         // Run the solver
         debug!("\nSolving the puzzle...");
-        let solver = Solver::new(board, dictionary, max_solutions);
+        let solver = Solver::new(board, &dictionary, max_solutions);
         let solutions = solver.solve();
 
         if solutions.is_empty() {

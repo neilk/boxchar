@@ -19,7 +19,7 @@ fn test_solver_basic() {
         "gawkily".to_string(),
     ];
     let wordlist = Dictionary::from_strings(words);
-    let solver = Solver::new(game, wordlist, 10);
+    let solver = Solver::new(game, &wordlist, 10);
     let solutions = solver.solve();
 
     assert!(!solutions.is_empty());

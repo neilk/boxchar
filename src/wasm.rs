@@ -58,7 +58,7 @@ pub fn solve_game(game_sides: Vec<String>, max_solutions: u16) -> Vec<String> {
     };
 
     // Create solver and solve using the global dictionary
-    let solver = Solver::new(board, dictionary.clone(), max_solutions);
+    let solver = Solver::new(board, dictionary, max_solutions);
     let solutions = solver.solve();
 
     console_log!("Found {} solutions", solutions.len());
