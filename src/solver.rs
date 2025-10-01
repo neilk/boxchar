@@ -2,6 +2,7 @@ use crate::board::Board;
 use crate::dictionary::{Dictionary, Word};
 use std::collections::HashMap;
 use std::fmt;
+use std::cmp::min;
 
 #[derive(Debug, Clone)]
 pub struct Solution {
@@ -11,7 +12,8 @@ pub struct Solution {
 
 impl Solution {
     pub fn new(words: Vec<Word>) -> Self {
-        let score: usize = words.iter().fold(0usize, |acc, w| acc + w.frequency as usize);
+        let min_frequency: usize = words.iter().fold(256usize, |acc, w| min(acc, w.frequency as usize));
+        let score: usize = (min_frequency * 10) / words.len();
         Solution { words, score }
     }
 }

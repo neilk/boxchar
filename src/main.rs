@@ -142,8 +142,10 @@ fn solve(board: Board, dictionary: Dictionary, max_solutions: u16) {
             debug!("No solutions found!");
         } else {
             debug!("Found {} solutions.", solutions.len());
-            for solution in solutions.iter() {
-                println!("{}", solution);
+            let mut sorted_solutions = solutions.clone();
+            sorted_solutions.sort_by(|a, b| b.score.cmp(&a.score));
+            for solution in sorted_solutions.iter() {
+                println!("{} {}", solution, solution.score);
             }
         }
     }
