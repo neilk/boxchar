@@ -2,6 +2,21 @@
 
 A solver for the New York Times word puzzle, "Letter Boxed". 
 
+## Why???
+
+The New York Times puzzle page is very popular! Yet, the existing solvers that I know of suck.
+
+* Hard to use
+* Slow
+* Only suggest "best" answers with ridiculously rare words
+* Most grind to a halt when the solution is more than two words. (It's a pretty hard problem)
+* Weren't written in Rust
+
+I got obsessed with this game about a year ago and I kept thinking of ways to write a fast solver. Here's my attempt,
+and not uncoincidentally it's my first real Rust project.
+
+## What is Letter Boxed?
+
 Letter Boxed puzzles are a set of letters in a box shape. Players must connect all the letters in the puzzle 
 with a chain of valid words, as in the following screenshot.
 
@@ -43,6 +58,30 @@ cargo build --release
 ```
 
 ## Usage
+
+### Sample run
+
+```bash
+$ cat data/game.txt 
+YFA
+OTK
+LGW
+RNI
+
+$ time ./target/release/boxchar --board=data/game.txt --max-solutions=10
+forklift-twangy 70
+know-wolf-fragility 63
+know-waif-fragility 56
+now-wakf-fragility 53
+work-kif-flagrantly 46
+work-kif-fragrantly 46
+work-kalif-flagrantly 43
+work-kalif-fragrantly 43
+work-kaif-flagrantly 36
+work-kaif-fragrantly 36
+
+./target/release/boxchar --board=data/game.txt --max-solutions=10  0.86s user 0.09s system 97% cpu 0.974 total
+```
 
 ### Basic Command Structure
 
