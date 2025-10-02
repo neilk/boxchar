@@ -59,7 +59,7 @@ cargo build --release
 
 ## Usage
 
-### Sample run
+### Command-line
 
 ```bash
 $ cat data/game.txt 
@@ -68,20 +68,29 @@ OTK
 LGW
 RNI
 
-$ time ./target/release/boxchar --board=data/game.txt --max-solutions=10
-forklift-twangy 70
-know-wolf-fragility 63
-know-waif-fragility 56
-now-wakf-fragility 53
-work-kif-flagrantly 46
-work-kif-fragrantly 46
-work-kalif-flagrantly 43
-work-kalif-fragrantly 43
-work-kaif-flagrantly 36
-work-kaif-fragrantly 36
+$ time ./target/release/boxchar --board=data/game.txt --max-solutions=10    
+forklift-twangy
+know-wolf-fragility
+know-waif-fragility
+now-wakf-fragility
+work-kif-flagrantly
+work-kif-fragrantly
+work-kalif-flagrantly
+work-kalif-fragrantly
+work-kaif-flagrantly
+work-kaif-fragrantly
 
-./target/release/boxchar --board=data/game.txt --max-solutions=10  0.86s user 0.09s system 97% cpu 0.974 total
+./target/release/boxchar --board=data/game.txt --max-solutions=10  0.78s user 0.05s system 70% cpu 1.183 total
 ```
+
+## Web
+
+```bash
+$ ./build-web.sh
+$ npx http-server -p 8000
+```
+![Screenshot of WASM site](solver-web.png)
+
 
 ### Basic Command Structure
 
@@ -191,12 +200,16 @@ GHI
 JKL
 ```
 
-## Wordlist Format
+## Dictionary Format
 
-Wordlist files should contain one word per line, with words in uppercase. The solver will:
-1. Filter words that can be formed with the given letters
-2. Ensure no letter repetitions (since all letters in the puzzle are unique)
-3. Validate that consecutive letters come from different sides
+Dictionary files are plain text, should contain one word per line, with two whitespace-separated tokens per line:
+- a word in lowercase,
+- a frequency score
+
+The file should be sorted with most frequent words first.
+
+The script ./build-dictionary.sh will construct this for you, given the included Collins Scrabble Words, and a sorted list 
+of the frequency of all words in Google NGrams. This file is not provided in this repository.
 
 
 ## License
