@@ -125,15 +125,18 @@
     <p>Enter the letters for each side of the Letter Boxed puzzle. The solver will find word combinations that use all letters.</p>
     
     <div class="example">
-        <h3>Example Puzzle</h3>
-        <p>Try this example puzzle:</p>
-        <ul>
-            <li>Side 1: JGH</li>
-            <li>Side 2: NVY</li>
-            <li>Side 3: EID</li>
-            <li>Side 4: ORP</li>
-        </ul>
-        <button onclick="loadExample()">Load Example</button>
+        <h3>Example Puzzles</h3>
+        <p>Try one of these example puzzles:</p>
+        <div class="side-input">
+            <label for="examplePuzzle">Select Example:</label>
+            <select id="examplePuzzle" onchange="loadExample()" style="padding: 10px; border: 2px solid #ddd; border-radius: 4px; font-size: 16px; margin-bottom: 10px;">
+                <option value="JGH,NVY,EID,ORP">JGH / NVY / EID / ORP</option>
+                <option value="YFA,OTK,LGW,RNI">YFA / OTK / LGW / RNI</option>
+                <option value="LHM,CIB,ANK,OUP">LHM / CIB / ANK / OUP</option>
+                <option value="GIY,ERC,XHA,LOP">GIY / ERC / XHA / LOP</option>
+                <option value="PRC,YAN,LKH,SIO">PRC / YAN / LKH / SIO</option>
+            </select>
+        </div>
     </div>
 
     <div class="container">
@@ -251,10 +254,14 @@
         }
         
         window.loadExample = function() {
-            document.getElementById('side1').value = 'JGH';
-            document.getElementById('side2').value = 'NVY';
-            document.getElementById('side3').value = 'EID';
-            document.getElementById('side4').value = 'ORP';
+            const puzzleSelect = document.getElementById('examplePuzzle');
+            const puzzleValue = puzzleSelect.value;
+            const sides = puzzleValue.split(',');
+
+            document.getElementById('side1').value = sides[0];
+            document.getElementById('side2').value = sides[1];
+            document.getElementById('side3').value = sides[2];
+            document.getElementById('side4').value = sides[3];
             // Save the example to localStorage
             savePuzzleToStorage();
         }
