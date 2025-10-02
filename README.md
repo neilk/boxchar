@@ -85,7 +85,7 @@ RNI
 | Option | Description | Default | Required |
 |--------|-------------|---------|----------|
 | `GAME_SPEC` | Game as comma-separated sides (e.g., "ABC,DEF,GHI,JKL") | - | Either this or `--game` |
-| `--game <PATH>` | Path to game file | - | Either this or `GAME_SPEC` |
+| `--board <PATH>` | Path to game file | - | Either this or `GAME_SPEC` |
 | `--wordlist <PATH>` | Path to wordlist file | `data/wordlist.txt` | No |
 | `--help` | Show help information | - | No |
 
@@ -96,7 +96,7 @@ RNI
 cargo run -- yfa,otk,lgw,rni
 
 # Using game file with custom wordlist
-cargo run -- --game data/game.txt --wordlist data/custom_wordlist.txt
+cargo run -- --board data/game.txt --wordlist data/custom_wordlist.txt
 
 # Get help
 cargo run -- --help
@@ -105,8 +105,8 @@ cargo run -- --help
 ### Error Cases
 
 The application will exit with an error if:
-- Neither game specification nor `--game` option is provided
-- Both game specification and `--game` option are provided
+- Neither game specification nor `--board` option is provided
+- Both game specification and `--board` option are provided
 - Game specification contains invalid characters (anything other than A-Z, a-z, comma)
 - Game file cannot be read or has invalid format
 - Wordlist file cannot be read
