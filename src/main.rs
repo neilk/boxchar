@@ -144,6 +144,7 @@ fn solve(board: Board, dictionary: Dictionary, max_solutions: u16) {
             debug!("Found {} solutions.", solutions.len());
             for solution in solutions.iter() {
                 println!("{}", solution);
+                debug!("  {} {}", solution.score, solution.words.iter().map(|w| w.frequency.to_string()).collect::<Vec<_>>().join("-"));
             }
         }
     }
