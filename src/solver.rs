@@ -4,6 +4,9 @@ use std::collections::HashMap;
 use std::fmt;
 use std::cmp::min;
 
+// We always consider at least this many solutions
+const DEFAULT_SEARCH_LIMIT: usize = 1000;
+
 #[derive(Debug, Clone)]
 pub struct Solution {
     pub words: Vec<Word>,
@@ -90,17 +93,24 @@ impl Solver {
 
     pub fn solve(&self) -> Vec<Solution> {
         let mut solutions = Vec::new();
+        let search_limit = std::cmp::max(DEFAULT_SEARCH_LIMIT, self.max_solutions);
 
         // Try solutions of each exact length
         for target_words in 1..=4 {
             let mut current_path = Vec::new();
-            self.search_recursive(&mut current_path, 0, None, &mut solutions, target_words);
+            self.search_recursive(&mut current_path, 0, None, &mut solutions, target_words, search_limit);
 
-            // Continue searching until we hit the solution limit
-            if solutions.len() >= self.max_solutions {
+            // Continue searching until we hit the search limit
+            if solutions.len() >= search_limit {
                 break;
             }
         }
+
+        // Sort by score descending
+        solutions.sort_by(|a, b| b.score.cmp(&a.score));
+
+        // Truncate to max_solutions
+        solutions.truncate(self.max_solutions);
 
         solutions
     }
@@ -112,9 +122,10 @@ impl Solver {
         last_char: Option<char>,
         solutions: &mut Vec<Solution>,
         target_words: usize,
+        search_limit: usize,
     ) {
         // Early termination if we have enough solutions
-        if solutions.len() >= self.max_solutions {
+        if solutions.len() >= search_limit {
             return;
         }
 
@@ -156,12 +167,13 @@ impl Solver {
                     new_last_char,
                     solutions,
                     target_words,
+                    search_limit,
                 );
 
                 current_path.pop();
 
                 // Early termination check
-                if solutions.len() >= self.max_solutions {
+                if solutions.len() >= search_limit {
                     return;
                 }
             }
