@@ -41,43 +41,6 @@ pub struct Solver {
     max_solutions: usize, // this is usize for convenience in comparisons to length(), but set from u16
 }
 
-/// Check if `shorter` is a subsequence of `longer` (with gaps allowed)
-/// Returns true if all words from `shorter` appear in `longer` in the same order,
-/// but not necessarily contiguously
-fn is_subsequence(shorter: &[Word], longer: &[Word]) -> bool {
-    if shorter.is_empty() {
-        return true;
-    }
-    if shorter.len() > longer.len() {
-        return false;
-    }
-
-    let mut shorter_idx = 0;
-    for word in longer {
-        if word.word == shorter[shorter_idx].word {
-            shorter_idx += 1;
-            if shorter_idx == shorter.len() {
-                return true;
-            }
-        }
-    }
-
-    false
-}
-
-/// Check if a solution is redundant with any shorter solutions
-/// A solution is redundant if any subsequence (not necessarily contiguous) of its words
-/// matches a complete solution from shorter_solutions
-fn is_redundant(solution: &Solution, shorter_solutions: &[Solution]) -> bool {
-    // For each shorter solution, check if its words appear in the same order in solution
-    for shorter in shorter_solutions {
-        if is_subsequence(&shorter.words, &solution.words) {
-            return true;
-        }
-    }
-    false
-}
-
 impl Solver {
     pub fn new(board: Board, dictionary: &Dictionary, max_solutions: u16) -> Self {
         // Create letter-to-bit mapping
