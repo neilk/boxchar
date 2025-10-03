@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::cmp::min;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Solution {
     pub words: Vec<Word>,
     pub score: usize,
@@ -39,6 +39,43 @@ pub struct Solver {
     words_by_first_letter: HashMap<char, Vec<usize>>,
     all_letters_mask: u32,
     max_solutions: usize, // this is usize for convenience in comparisons to length(), but set from u16
+}
+
+/// Check if `shorter` is a subsequence of `longer` (with gaps allowed)
+/// Returns true if all words from `shorter` appear in `longer` in the same order,
+/// but not necessarily contiguously
+fn is_subsequence(shorter: &[Word], longer: &[Word]) -> bool {
+    if shorter.is_empty() {
+        return true;
+    }
+    if shorter.len() > longer.len() {
+        return false;
+    }
+
+    let mut shorter_idx = 0;
+    for word in longer {
+        if word.word == shorter[shorter_idx].word {
+            shorter_idx += 1;
+            if shorter_idx == shorter.len() {
+                return true;
+            }
+        }
+    }
+
+    false
+}
+
+/// Check if a solution is redundant with any shorter solutions
+/// A solution is redundant if any subsequence (not necessarily contiguous) of its words
+/// matches a complete solution from shorter_solutions
+fn is_redundant(solution: &Solution, shorter_solutions: &[Solution]) -> bool {
+    // For each shorter solution, check if its words appear in the same order in solution
+    for shorter in shorter_solutions {
+        if is_subsequence(&shorter.words, &solution.words) {
+            return true;
+        }
+    }
+    false
 }
 
 impl Solver {
@@ -89,23 +126,32 @@ impl Solver {
     }
 
     pub fn solve(&self) -> Vec<Solution> {
-        let mut solutions = Vec::new();
+        let mut all_solutions = Vec::new();
 
         // Try solutions of each exact length
         for target_words in 1..=4 {
             let mut current_path = Vec::new();
-            self.search_recursive(&mut current_path, 0, None, &mut solutions, target_words);
+            let mut depth_solutions = Vec::new();
+            self.search_recursive(&mut current_path, 0, None, &mut depth_solutions, target_words);
+
+            // Filter out solutions redundant with shorter ones
+            let non_redundant: Vec<Solution> = depth_solutions
+                .into_iter()
+                .filter(|sol| !is_redundant(sol, &all_solutions))
+                .collect();
+
+            all_solutions.extend(non_redundant);
 
             // Continue searching until we hit the search limit
-            if solutions.len() >= self.max_solutions {
+            if all_solutions.len() >= self.max_solutions {
                 break;
             }
         }
 
         // Sort by score descending
-        solutions.sort_by(|a, b| b.score.cmp(&a.score));
+        all_solutions.sort_by(|a, b| b.score.cmp(&a.score));
 
-        solutions
+        all_solutions
     }
 
     fn search_recursive(
@@ -189,6 +235,95 @@ mod tests {
         assert_eq!(solution.to_string(), "word-dojo-ocean");
         let single_word = Solution::new(vec![dictionary.words[0].clone()]);
         assert_eq!(single_word.to_string(), "word");
+    }
+
+    #[test]
+    fn test_is_subsequence() {
+        let words = ["fox", "glove", "equity", "golf"];
+        let word_strings = words.iter().map(|&s| s.to_string()).collect();
+        let dictionary = Dictionary::from_strings(word_strings);
+
+        let fox = &dictionary.words[0];
+        let glove = &dictionary.words[1];
+        let equity = &dictionary.words[2];
+        let golf = &dictionary.words[3];
+
+        // Test exact match
+        assert!(is_subsequence(&[fox.clone()], &[fox.clone()]));
+
+        // Test contiguous subsequence
+        let short = vec![fox.clone(), glove.clone()];
+        let long = vec![golf.clone(), fox.clone(), glove.clone(), equity.clone()];
+        assert!(is_subsequence(&short, &long));
+
+        // Test not a subsequence (wrong order)
+        let wrong_order = vec![glove.clone(), fox.clone()];
+        assert!(!is_subsequence(&wrong_order, &long));
+
+        // Test at beginning
+        let beginning = vec![golf.clone()];
+        assert!(is_subsequence(&beginning, &long));
+
+        // Test at end
+        let end = vec![glove.clone(), equity.clone()];
+        assert!(is_subsequence(&end, &long));
+
+        // Test longer not subsequence of shorter
+        assert!(!is_subsequence(&long, &short));
+
+        // Test non-contiguous subsequence (with gaps) - this should NOW return true
+        let with_gap = vec![golf.clone(), glove.clone()];
+        assert!(is_subsequence(&with_gap, &long)); // golf at index 0, glove at index 2
+
+        // Test another non-contiguous
+        let with_gap2 = vec![fox.clone(), equity.clone()];
+        assert!(is_subsequence(&with_gap2, &long)); // fox at index 1, equity at index 3
+    }
+
+    #[test]
+    fn test_redundancy_filtering() {
+        // Simple board: ABC/DEF/GHI/JKL
+        let sides = vec![
+            "vyq".to_string(),
+            "fig".to_string(),
+            "ote".to_string(),
+            "xlu".to_string(),
+        ];
+        let board = Board::from_sides(sides).unwrap();
+
+        let word_strs = ["foxglove", "equity", "eye", "golf", "flog", "glove", "exile", "yog"];
+        let word_strings = word_strs.iter().map(|&s| s.to_string()).collect();
+        let dictionary = Dictionary::from_strings(word_strings);
+
+        let foxglove = &dictionary.words[0];
+        let equity = &dictionary.words[1];
+        let eye = &dictionary.words[2];
+        let golf = &dictionary.words[3];
+        let flog = &dictionary.words[4];
+        let glove = &dictionary.words[5];
+        let exile = &dictionary.words[6];
+        let yog = &dictionary.words[7];
+
+        
+
+        let solver = Solver::new(board, &dictionary, 500);
+        let solutions = solver.solve();
+
+        fn has(solutions: &Vec<Solution>, ws: Vec<&Word>) -> bool {
+            let vec_word_clones: Vec<Word> = ws.iter().map(|&w| w.clone()).collect();
+            let solution = Solution::new(vec_word_clones);
+            solutions.contains(&solution)
+        }
+        // Should have unique and interesting solutions like FOXGLOVE-EQUITY, FLOG-GLOVE-EXILE-EQUITY
+        assert!(has(&solutions, vec![foxglove, equity]), "Should have FOXGLOVE-EQUITY");
+        assert!(has(&solutions, vec![flog, glove, exile, equity]), "Should have FLOG-GLOVE-EXILE-EQUITY");
+        
+
+        // Should not have solutions which are redundant
+        assert!(!has(&solutions, vec![foxglove, eye, equity]), "Should not have FOXGLOVE-EYE-EQUITY");
+        assert!(!has(&solutions, vec![golf, foxglove, equity]), "Should not have GOLF-FOXGLOVE-EQUITY");
+        assert!(!has(&solutions, vec![foxglove, equity, yog]), "Should not have FOXGLOVE-EQUITY-YOG");
+
     }
 
     #[test]

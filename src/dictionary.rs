@@ -8,23 +8,36 @@ use std::path::Path;
  * playable in our game.
  */
 
-pub fn extract_digraphs(word: &String) -> HashSet<String> {
-    let chars: Vec<char> = word.chars().collect();
-    let mut digraphs = HashSet::new();
-
-    for i in 0..chars.len() - 1 {
-        let digraph = format!("{}{}", chars[i], chars[i + 1]);
-        digraphs.insert(digraph);
-    }
-
-    digraphs
-}
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Word {
     pub word: String,
     pub frequency: i8,
     pub digraphs: HashSet<String>,
+}
+
+impl Word {
+    /// Extract digraphs (consecutive letter pairs) from a word
+    fn extract_digraphs(word: &str) -> HashSet<String> {
+        let chars: Vec<char> = word.chars().collect();
+        let mut digraphs = HashSet::new();
+
+        for i in 0..chars.len() - 1 {
+            let digraph = format!("{}{}", chars[i], chars[i + 1]);
+            digraphs.insert(digraph);
+        }
+
+        digraphs
+    }
+
+    /// Create a new Word with the given word string and frequency
+    pub fn new(word: String, frequency: i8) -> Self {
+        let digraphs = Self::extract_digraphs(&word);
+        Word {
+            word,
+            frequency,
+            digraphs,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -52,14 +65,7 @@ impl Dictionary {
     pub fn from_strings(words: Vec<String>) -> Self {
         let word_frequencies: Vec<Word> = words
             .into_iter()
-            .map(|w| {
-                let digraphs = extract_digraphs(&w);
-                Word {
-                    word: w,
-                    frequency: Self::DEFAULT_FREQUENCY,
-                    digraphs,
-                }
-            })
+            .map(|w| Word::new(w, Self::DEFAULT_FREQUENCY))
             .collect();
         Self::from_words(word_frequencies)
     }
@@ -68,11 +74,7 @@ impl Dictionary {
         let mut parts = line.trim().split_whitespace();
         match (parts.next(), parts.next()) {
             (Some(word_str), Some(frequency_str)) => match frequency_str.parse::<i8>() {
-                Ok(frequency) => Some(Word {
-                    word: word_str.to_string(),
-                    frequency,
-                    digraphs: extract_digraphs(&word_str.to_string()),
-                }),
+                Ok(frequency) => Some(Word::new(word_str.to_string(), frequency)),
                 Err(_) => None,
             },
             _ => None,
@@ -126,8 +128,8 @@ mod tests {
             .map(|s| s.to_string())
             .collect();
 
-        let actual_digraphs = extract_digraphs(&"PIRATE".to_string());
-        assert_eq!(actual_digraphs, expected_digraphs);
+        let word = Word::new("PIRATE".to_string(), 15);
+        assert_eq!(word.digraphs, expected_digraphs);
     }
 
     #[test]
