@@ -177,31 +177,24 @@ impl Solver {
     }
 
     pub fn solve(&self) -> Vec<Solution> {
-        let mut all_solutions = Vec::new();
+        let mut solutions = Vec::new();
 
         // Try solutions of each exact length
         for target_words in 1..=4 {
             let mut current_path = Vec::new();
-            let mut depth_solutions = Vec::new();
-            self.search_recursive(&mut current_path, 0, None, &mut depth_solutions, target_words);
-
-            // Add non-redundant solutions, but respect max_solutions limit
-            let space_remaining = self.max_solutions.saturating_sub(all_solutions.len());
-            all_solutions.extend(depth_solutions.into_iter().take(space_remaining));
-
-            // Stop if we've reached the limit
-            if all_solutions.len() >= self.max_solutions {
+            self.search_recursive(&mut current_path, 0, None, &mut solutions, target_words);
+            if solutions.len() >= self.max_solutions {
                 break;
             }
         }
 
         // Sort by score descending
-        all_solutions.sort_by(|a, b| b.score.cmp(&a.score));
+        solutions.sort_by(|a, b| b.score.cmp(&a.score));
 
         // Ensure we don't exceed max_solutions after sorting
-        all_solutions.truncate(self.max_solutions);
+        solutions.truncate(self.max_solutions);
 
-        all_solutions
+        solutions
     }
 
     fn search_recursive(
@@ -212,10 +205,8 @@ impl Solver {
         solutions: &mut Vec<Solution>,
         target_words: usize,
     ) {
-        // Early termination: generate more solutions than max_solutions to account for filtering
-        // Use 3x multiplier as buffer for redundancy filtering
-        let search_limit = self.max_solutions * 3;
-        if solutions.len() >= search_limit {
+        // Early termination if we have enough solutions
+        if solutions.len() >= self.max_solutions {
             return;
         }
 
