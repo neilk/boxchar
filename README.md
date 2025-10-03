@@ -68,7 +68,7 @@ OTK
 LGW
 RNI
 
-$ time ./target/release/boxchar --board=data/game.txt --max-solutions=10    
+$ time ./target/release/boxchar --board=data/board.txt --max-solutions=10    
 forklift-twangy
 know-wolf-fragility
 know-waif-fragility
@@ -80,7 +80,7 @@ work-kalif-fragrantly
 work-kaif-flagrantly
 work-kaif-fragrantly
 
-./target/release/boxchar --board=data/game.txt --max-solutions=10  0.78s user 0.05s system 70% cpu 1.183 total
+./target/release/boxchar --board=data/board.txt --max-solutions=10  0.78s user 0.05s system 70% cpu 1.183 total
 ```
 
 ## Web
@@ -117,7 +117,7 @@ Requirements:
 #### 2. File Path (--game option)
 ```bash
 # Load game from a file
-cargo run -- --game data/game.txt
+cargo run -- --game data/board.txt
 ```
 
 The game file should contain 4 lines, each representing one side:
@@ -132,19 +132,19 @@ RNI
 
 | Option | Description | Default | Required |
 |--------|-------------|---------|----------|
-| `GAME_SPEC` | Game as comma-separated sides (e.g., "ABC,DEF,GHI,JKL") | - | Either this or `--game` |
-| `--board <PATH>` | Path to game file | - | Either this or `GAME_SPEC` |
+| `BOARD_SPEC` | Board as comma-separated sides (e.g., "ABC,DEF,GHI,JKL") | - | Either this or `--board` |
+| `--board <PATH>` | Path to board file | - | Either this or `BOARD_SPEC` |
 | `--wordlist <PATH>` | Path to wordlist file | `data/wordlist.txt` | No |
 | `--help` | Show help information | - | No |
 
 ### Examples
 
 ```bash
-# Using positional game specification
+# Using positional board specification
 cargo run -- yfa,otk,lgw,rni
 
-# Using game file with custom wordlist
-cargo run -- --board data/game.txt --wordlist data/custom_wordlist.txt
+# Using board file with custom dictionary
+cargo run -- --board data/board.txt --wordlist path/to/custom_dictionary.txt
 
 # Get help
 cargo run -- --help
@@ -152,12 +152,12 @@ cargo run -- --help
 
 ### Error Cases
 
-The application will exit with an error if:
-- Neither game specification nor `--board` option is provided
-- Both game specification and `--board` option are provided
-- Game specification contains invalid characters (anything other than A-Z, a-z, comma)
-- Game file cannot be read or has invalid format
-- Wordlist file cannot be read
+The application will exit with an error if
+
+- There is no clear board specification, from file or command line
+- Board specification contains invalid characters (anything other than A-Z, a-z, comma)
+- Board file cannot be read or has invalid format
+- Dictionary file cannot be read
 
 ## Development Commands
 
@@ -187,9 +187,8 @@ cargo fmt
 ## Game File Format
 
 Game files must follow these rules:
-- Exactly 4 lines (representing the 4 sides)
+
 - All sides must have the same length
-- Only uppercase ASCII letters (A-Z)
 - No duplicate letters across all sides
 
 Example valid game file:
@@ -203,6 +202,7 @@ JKL
 ## Dictionary Format
 
 Dictionary files are plain text, should contain one word per line, with two whitespace-separated tokens per line:
+
 - a word in lowercase,
 - a frequency score
 

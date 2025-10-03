@@ -101,7 +101,7 @@ entail processing the wordlist twice; one for "forwards" and once for "backwards
 - Valid digraphs can only be formed between letters from different sides
 
 ### Data Files
-- `data/game.txt` - Main game configuration (4 sides of letters)
-- `data/wordlist.txt` - Word dictionary for validation
-- `data/wordlist_test.txt` - Test word list
+- `data/board.txt` - Sample board configuration (4 sides of letters)
+- `data/dictionary.txt` - Word dictionary for validation
+- `data/dictionary_test.txt` - Test word list
 - `data/answers.txt` - Valid answers/solutions
