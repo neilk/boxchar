@@ -2,18 +2,23 @@
 
 A solver for the New York Times word puzzle, "Letter Boxed". 
 
-## Why???
+## Why?
 
 The New York Times puzzle page is very popular! Yet, the existing solvers that I know of suck.
 
 * Hard to use
 * Slow
 * Only suggest "best" answers with ridiculously rare words
-* Most grind to a halt when the solution is more than two words. (It's a pretty hard problem)
+* Give redundant answers
+* Grind to a halt when the solution is more than two words
 * Weren't written in Rust
 
 I got obsessed with this game about a year ago and I kept thinking of ways to write a fast solver. Here's my attempt,
 and not uncoincidentally it's my first real Rust project.
+
+## Notes on the algorithm
+
+See ![algorithm notes](ALGORITHM.md).
 
 ## What is Letter Boxed?
 
