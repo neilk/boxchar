@@ -100,11 +100,6 @@ entail processing the wordlist twice; one for "forwards" and once for "backwards
 - No duplicate letters across any sides
 - Valid digraphs can only be formed between letters from different sides
 
-### Test Structure
-- Tests use `tempfile` crate for isolated file testing
-- Comprehensive validation testing in `tests/game_validation.rs`
-- Tests cover structural validation, content validation, and digraph generation
-
 ### Data Files
 - `data/game.txt` - Main game configuration (4 sides of letters)
 - `data/wordlist.txt` - Word dictionary for validation
