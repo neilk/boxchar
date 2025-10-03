@@ -17,13 +17,13 @@ impl Solution {
         Solution { words, score }
     }
 
-    /// Returns all redactable subsequences of this solution.
+    /// Returns all redactable subsequences of this solution as vectors of indices.
     /// A subsequence is redactable if:
     /// 1. It includes the head of the solution (first word can be removed), OR
     /// 2. It doesn't include the head, but forms a valid word chain (first and last letters match across the gap)
     ///
     /// All redactions must be shorter than the original solution.
-    pub fn redactable_subsequences(&self) -> Vec<Vec<Word>> {
+    pub fn redactable_subsequences(&self) -> Vec<Vec<usize>> {
         let n = self.words.len();
         if n <= 1 {
             return vec![];
@@ -40,15 +40,15 @@ impl Solution {
                 continue;
             }
 
-            let mut subsequence = Vec::new();
+            let mut indices = Vec::new();
             for i in 0..n {
                 if (mask & (1 << i)) != 0 {
-                    subsequence.push(self.words[i].clone());
+                    indices.push(i);
                 }
             }
 
             // Check if this subsequence is redactable
-            if subsequence.is_empty() {
+            if indices.is_empty() {
                 continue;
             }
 
@@ -59,9 +59,9 @@ impl Solution {
             let forms_valid_chain = if !includes_head {
                 // Check that consecutive words in the subsequence form valid chains
                 let mut valid = true;
-                for i in 0..subsequence.len() - 1 {
-                    let last_char = subsequence[i].word.chars().last();
-                    let first_char = subsequence[i + 1].word.chars().next();
+                for i in 0..indices.len() - 1 {
+                    let last_char = self.words[indices[i]].word.chars().last();
+                    let first_char = self.words[indices[i + 1]].word.chars().next();
                     if last_char != first_char {
                         valid = false;
                         break;
@@ -73,7 +73,7 @@ impl Solution {
             };
 
             if includes_head || forms_valid_chain {
-                redactions.push(subsequence);
+                redactions.push(indices);
             }
         }
 
@@ -154,12 +154,13 @@ impl Solver {
     /// Check if a solution is redundant by examining its redactable subsequences.
     /// A solution is redundant if any of its redactions also covers all letters.
     fn is_solution_redundant(&self, solution: &Solution) -> bool {
-        let redactions = solution.redactable_subsequences();
+        let redaction_indices = solution.redactable_subsequences();
 
-        for redaction in redactions {
-            // Compute the combined bitmap for this redaction
+        for indices in redaction_indices {
+            // Compute the combined bitmap for this redaction by indexing into solution
             let mut combined_bitmap = 0u32;
-            for word in &redaction {
+            for &idx in &indices {
+                let word = &solution.words[idx];
                 // Find the bitmap for this word
                 if let Some(wb) = self.word_bitmaps.iter().find(|wb| wb.word == *word) {
                     combined_bitmap |= wb.bitmap;
@@ -294,33 +295,30 @@ mod tests {
 
         // Test FOXGLOVE-EYE-EQUITY
         let solution = Solution::new(vec![
-            dictionary.words[0].clone(), // foxglove
-            dictionary.words[1].clone(), // eye
-            dictionary.words[2].clone(), // equity
+            dictionary.words[0].clone(), // foxglove (index 0)
+            dictionary.words[1].clone(), // eye (index 1)
+            dictionary.words[2].clone(), // equity (index 2)
         ]);
 
-        let redactions = solution.redactable_subsequences();
+        let redaction_indices = solution.redactable_subsequences();
 
         // Should include redactions like:
-        // - [EYE, EQUITY] (removes head)
-        // - [EQUITY] (removes head)
-        // - [FOXGLOVE, EQUITY] (valid chain, skips EYE)
+        // - [1, 2] = [EYE, EQUITY] (removes head)
+        // - [2] = [EQUITY] (removes head)
+        // - [0, 2] = [FOXGLOVE, EQUITY] (valid chain, skips EYE)
         // etc.
 
-        // Helper to check if a specific word sequence is in redactions
-        let has_redaction = |word_names: Vec<&str>| {
-            redactions.iter().any(|r| {
-                r.len() == word_names.len() &&
-                r.iter().zip(word_names.iter()).all(|(w, name)| w.word == *name)
-            })
+        // Helper to check if specific indices are in redactions
+        let has_redaction = |expected_indices: Vec<usize>| {
+            redaction_indices.iter().any(|r| *r == expected_indices)
         };
 
-        assert!(has_redaction(vec!["eye", "equity"]), "Should have EYE-EQUITY (removes head)");
-        assert!(has_redaction(vec!["equity"]), "Should have EQUITY (removes head)");
-        assert!(has_redaction(vec!["foxglove", "equity"]), "Should have FOXGLOVE-EQUITY (valid chain)");
+        assert!(has_redaction(vec![1, 2]), "Should have [1, 2] = EYE-EQUITY (removes head)");
+        assert!(has_redaction(vec![2]), "Should have [2] = EQUITY (removes head)");
+        assert!(has_redaction(vec![0, 2]), "Should have [0, 2] = FOXGLOVE-EQUITY (valid chain)");
 
         // Should NOT include the full solution
-        assert!(!has_redaction(vec!["foxglove", "eye", "equity"]), "Should not include full solution");
+        assert!(!has_redaction(vec![0, 1, 2]), "Should not include full solution [0, 1, 2]");
     }
 
     #[test]
