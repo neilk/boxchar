@@ -180,9 +180,9 @@ impl Solver {
         let mut solutions = Vec::new();
 
         // Try solutions of each exact length
-        for target_words in 1..=4 {
+        for target_length in 1..=4 {
             let mut current_path = Vec::new();
-            self.search_recursive(&mut current_path, 0, None, &mut solutions, target_words);
+            self.search_recursive(&mut current_path, 0, None, &mut solutions, target_length);
             if solutions.len() >= self.max_solutions {
                 break;
             }
@@ -203,7 +203,7 @@ impl Solver {
         covered_bitmap: u32,
         last_char: Option<char>,
         solutions: &mut Vec<Solution>,
-        target_words: usize,
+        target_length: usize,
     ) {
         // Early termination if we have enough solutions
         if solutions.len() >= self.max_solutions {
@@ -211,7 +211,7 @@ impl Solver {
         }
 
         // Check if we've found a complete solution of the target length
-        if covered_bitmap == self.all_letters_mask && current_path.len() == target_words {
+        if covered_bitmap == self.all_letters_mask && current_path.len() == target_length {
             let solution = Solution::new(current_path.clone());
             if !self.is_solution_redundant(&solution) {
                 solutions.push(solution);
@@ -220,7 +220,7 @@ impl Solver {
         }
 
         // Don't go deeper if we've hit the word limit
-        if current_path.len() >= target_words {
+        if current_path.len() >= target_length {
             return;
         }
 
@@ -250,7 +250,7 @@ impl Solver {
                     new_bitmap,
                     new_last_char,
                     solutions,
-                    target_words,
+                    target_length,
                 );
 
                 current_path.pop();

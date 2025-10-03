@@ -1,7 +1,8 @@
 use boxchar::{board::Board, solver::Solver, dictionary::Dictionary}; // using our library!
 use clap::Parser;
 use log::debug;
-use std::{collections::HashSet, path::Path};
+use std::{collections::{HashSet, HashMap}, path::Path};
+
 
 #[derive(Parser)]
 #[command(name = "boxchar")]
@@ -127,12 +128,19 @@ fn solve(board: Board, dictionary: Dictionary, max_solutions: u16) {
     debug!("Number of words: {}", dictionary.words.len());
     {
         let board_dictionary = board.playable_dictionary(&dictionary);
-        debug!("\nFirst 10 possible words for this game:");
-        for w in board_dictionary.words.iter().take(10) {
-            debug!("  {}", w.word);
-        }
         debug!("Total possible words: {}", board_dictionary.words.len());
 
+        let mut histogram: HashMap<i8, usize> = HashMap::new(); 
+        for word in &board_dictionary.words {
+            histogram.entry(word.frequency)
+                .and_modify(|val| *val += 1)
+                .or_insert(1);
+        }
+        let mut frequencies_sorted = histogram.keys().collect::<Vec<&i8>>();
+        frequencies_sorted.sort_by(|&a,&b| a.cmp(b));
+        for frequency in frequencies_sorted {
+            debug!("   frequency: {}  count: {}", frequency, histogram[frequency]);            
+        }
         // Run the solver
         debug!("\nSolving the puzzle...");
         let solver = Solver::new(board, &dictionary, max_solutions);
