@@ -16,6 +16,69 @@ impl Solution {
         let score: usize = (min_frequency * 10) / words.len();
         Solution { words, score }
     }
+
+    /// Returns all redactable subsequences of this solution.
+    /// A subsequence is redactable if:
+    /// 1. It includes the head of the solution (first word can be removed), OR
+    /// 2. It doesn't include the head, but forms a valid word chain (first and last letters match across the gap)
+    ///
+    /// All redactions must be shorter than the original solution.
+    pub fn redactable_subsequences(&self) -> Vec<Vec<Word>> {
+        let n = self.words.len();
+        if n <= 1 {
+            return vec![];
+        }
+
+        let mut redactions = Vec::new();
+
+        // Generate all non-empty proper subsequences (shorter than original)
+        // Use bitmask to represent which words to include
+        let num_subsets = 1 << n;
+        for mask in 1..num_subsets {
+            // Skip if this includes all words (not a proper subsequence)
+            if mask == num_subsets - 1 {
+                continue;
+            }
+
+            let mut subsequence = Vec::new();
+            for i in 0..n {
+                if (mask & (1 << i)) != 0 {
+                    subsequence.push(self.words[i].clone());
+                }
+            }
+
+            // Check if this subsequence is redactable
+            if subsequence.is_empty() {
+                continue;
+            }
+
+            // Rule 1: Includes the head (index 0 not set in mask means head is removed)
+            let includes_head = (mask & 1) == 0;
+
+            // Rule 2: Check if it forms a valid chain (if head is included)
+            let forms_valid_chain = if !includes_head {
+                // Check that consecutive words in the subsequence form valid chains
+                let mut valid = true;
+                for i in 0..subsequence.len() - 1 {
+                    let last_char = subsequence[i].word.chars().last();
+                    let first_char = subsequence[i + 1].word.chars().next();
+                    if last_char != first_char {
+                        valid = false;
+                        break;
+                    }
+                }
+                valid
+            } else {
+                true
+            };
+
+            if includes_head || forms_valid_chain {
+                redactions.push(subsequence);
+            }
+        }
+
+        redactions
+    }
 }
 
 impl fmt::Display for Solution {
@@ -88,6 +151,30 @@ impl Solver {
         }
     }
 
+    /// Check if a solution is redundant by examining its redactable subsequences.
+    /// A solution is redundant if any of its redactions also covers all letters.
+    fn is_solution_redundant(&self, solution: &Solution) -> bool {
+        let redactions = solution.redactable_subsequences();
+
+        for redaction in redactions {
+            // Compute the combined bitmap for this redaction
+            let mut combined_bitmap = 0u32;
+            for word in &redaction {
+                // Find the bitmap for this word
+                if let Some(wb) = self.word_bitmaps.iter().find(|wb| wb.word == *word) {
+                    combined_bitmap |= wb.bitmap;
+                }
+            }
+
+            // If this redaction covers all letters, the original solution is redundant
+            if combined_bitmap == self.all_letters_mask {
+                return true;
+            }
+        }
+
+        false
+    }
+
     pub fn solve(&self) -> Vec<Solution> {
         let mut all_solutions = Vec::new();
 
@@ -97,15 +184,9 @@ impl Solver {
             let mut depth_solutions = Vec::new();
             self.search_recursive(&mut current_path, 0, None, &mut depth_solutions, target_words);
 
-            // Filter out solutions redundant with shorter ones
-            let non_redundant: Vec<Solution> = depth_solutions
-                .into_iter()
-                .filter(|sol| !is_redundant(sol, &all_solutions))
-                .collect();
-
             // Add non-redundant solutions, but respect max_solutions limit
             let space_remaining = self.max_solutions.saturating_sub(all_solutions.len());
-            all_solutions.extend(non_redundant.into_iter().take(space_remaining));
+            all_solutions.extend(depth_solutions.into_iter().take(space_remaining));
 
             // Stop if we've reached the limit
             if all_solutions.len() >= self.max_solutions {
@@ -139,8 +220,11 @@ impl Solver {
 
         // Check if we've found a complete solution of the target length
         if covered_bitmap == self.all_letters_mask && current_path.len() == target_words {
-            solutions.push(Solution::new(current_path.clone()));
-            return;
+            let solution = Solution::new(current_path.clone());
+            if !self.is_solution_redundant(&solution) {
+                solutions.push(solution);
+                return;
+            }
         }
 
         // Don't go deeper if we've hit the word limit
@@ -203,46 +287,52 @@ mod tests {
     }
 
     #[test]
-    fn test_is_subsequence() {
-        let words = ["fox", "glove", "equity", "golf"];
+    fn test_redactable_subsequences() {
+        let words = ["foxglove", "eye", "equity"];
         let word_strings = words.iter().map(|&s| s.to_string()).collect();
         let dictionary = Dictionary::from_strings(word_strings);
 
-        let fox = &dictionary.words[0];
-        let glove = &dictionary.words[1];
-        let equity = &dictionary.words[2];
-        let golf = &dictionary.words[3];
+        // Test FOXGLOVE-EYE-EQUITY
+        let solution = Solution::new(vec![
+            dictionary.words[0].clone(), // foxglove
+            dictionary.words[1].clone(), // eye
+            dictionary.words[2].clone(), // equity
+        ]);
 
-        // Test exact match
-        assert!(is_subsequence(&[fox.clone()], &[fox.clone()]));
+        let redactions = solution.redactable_subsequences();
 
-        // Test contiguous subsequence
-        let short = vec![fox.clone(), glove.clone()];
-        let long = vec![golf.clone(), fox.clone(), glove.clone(), equity.clone()];
-        assert!(is_subsequence(&short, &long));
+        // Should include redactions like:
+        // - [EYE, EQUITY] (removes head)
+        // - [EQUITY] (removes head)
+        // - [FOXGLOVE, EQUITY] (valid chain, skips EYE)
+        // etc.
 
-        // Test not a subsequence (wrong order)
-        let wrong_order = vec![glove.clone(), fox.clone()];
-        assert!(!is_subsequence(&wrong_order, &long));
+        // Helper to check if a specific word sequence is in redactions
+        let has_redaction = |word_names: Vec<&str>| {
+            redactions.iter().any(|r| {
+                r.len() == word_names.len() &&
+                r.iter().zip(word_names.iter()).all(|(w, name)| w.word == *name)
+            })
+        };
 
-        // Test at beginning
-        let beginning = vec![golf.clone()];
-        assert!(is_subsequence(&beginning, &long));
+        assert!(has_redaction(vec!["eye", "equity"]), "Should have EYE-EQUITY (removes head)");
+        assert!(has_redaction(vec!["equity"]), "Should have EQUITY (removes head)");
+        assert!(has_redaction(vec!["foxglove", "equity"]), "Should have FOXGLOVE-EQUITY (valid chain)");
 
-        // Test at end
-        let end = vec![glove.clone(), equity.clone()];
-        assert!(is_subsequence(&end, &long));
+        // Should NOT include the full solution
+        assert!(!has_redaction(vec!["foxglove", "eye", "equity"]), "Should not include full solution");
+    }
 
-        // Test longer not subsequence of shorter
-        assert!(!is_subsequence(&long, &short));
+    #[test]
+    fn test_redactable_subsequences_single_word() {
+        let words = ["foxglove"];
+        let word_strings = words.iter().map(|&s| s.to_string()).collect();
+        let dictionary = Dictionary::from_strings(word_strings);
 
-        // Test non-contiguous subsequence (with gaps) - this should NOW return true
-        let with_gap = vec![golf.clone(), glove.clone()];
-        assert!(is_subsequence(&with_gap, &long)); // golf at index 0, glove at index 2
+        let solution = Solution::new(vec![dictionary.words[0].clone()]);
+        let redactions = solution.redactable_subsequences();
 
-        // Test another non-contiguous
-        let with_gap2 = vec![fox.clone(), equity.clone()];
-        assert!(is_subsequence(&with_gap2, &long)); // fox at index 1, equity at index 3
+        assert_eq!(redactions.len(), 0, "Single word solution should have no redactions");
     }
 
     #[test]
