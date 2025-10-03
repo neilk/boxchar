@@ -326,7 +326,6 @@ mod tests {
 
     #[test]
     fn test_redundancy_filtering() {
-        // Simple board: ABC/DEF/GHI/JKL
         let sides = vec![
             "vyq".to_string(),
             "fig".to_string(),
@@ -335,7 +334,7 @@ mod tests {
         ];
         let board = Board::from_sides(sides).unwrap();
 
-        let word_strs = ["foxglove", "equity", "eye", "golf", "flog", "glove", "exile", "yog"];
+        let word_strs = ["foxglove", "equity", "eye", "golf", "flog", "glove", "exile", "exit", "tie", "yog"];
         let word_strings = word_strs.iter().map(|&s| s.to_string()).collect();
         let dictionary = Dictionary::from_strings(word_strings);
 
@@ -346,11 +345,11 @@ mod tests {
         let flog = &dictionary.words[4];
         let glove = &dictionary.words[5];
         let exile = &dictionary.words[6];
-        let yog = &dictionary.words[7];
+        let exit = &dictionary.words[7];
+        let tie = &dictionary.words[8];
+        let yog = &dictionary.words[9];
 
-        
-
-        let solver = Solver::new(board, &dictionary, 500);
+        let solver = Solver::new(board, &dictionary, 1000);
         let solutions = solver.solve();
 
         fn has(solutions: &Vec<Solution>, ws: Vec<&Word>) -> bool {
@@ -358,14 +357,20 @@ mod tests {
             let solution = Solution::new(vec_word_clones);
             solutions.contains(&solution)
         }
-        // Should have unique and interesting solutions like FOXGLOVE-EQUITY, FLOG-GLOVE-EXILE-EQUITY
+        // Should have unique and interesting solutions
         assert!(has(&solutions, vec![foxglove, equity]), "Should have FOXGLOVE-EQUITY");
+
+        // EXILE is a "redactable" interior sequence, since it begins and ends with the same letter,
+        // but removing it means we're missing an X, so it should still be a solution.
         assert!(has(&solutions, vec![flog, glove, exile, equity]), "Should have FLOG-GLOVE-EXILE-EQUITY");
         
-
         // Should not have solutions which are redundant
         assert!(!has(&solutions, vec![foxglove, eye, equity]), "Should not have FOXGLOVE-EYE-EQUITY");
+        assert!(!has(&solutions, vec![foxglove, exit, tie, equity]), "Should not have FOXGLOVE-EXIT-TIE-EQUITY");
         assert!(!has(&solutions, vec![golf, foxglove, equity]), "Should not have GOLF-FOXGLOVE-EQUITY");
+
+        // This should have already have been impossible, the recursive search should have stopped before adding YOG,
+        // but we'll just add it here anyway.
         assert!(!has(&solutions, vec![foxglove, equity, yog]), "Should not have FOXGLOVE-EQUITY-YOG");
 
     }
