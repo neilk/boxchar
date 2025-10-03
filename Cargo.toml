@@ -10,12 +10,9 @@ readme = "README.md"
 clap = { version = "4.0", features = ["derive"] }
 env_logger = "0.11.8"
 log = "0.4.27"
-ndarray = "0.16"
-tempfile = "3.2"
 wasm-bindgen = { version = "0.2", features = ["serde-serialize"] }
 js-sys = "0.3"
 web-sys = "0.3"
-bitvec = "1.0.1"
 
 [lib]
 name = "boxchar"
