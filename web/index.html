@@ -125,10 +125,11 @@
     <p>Enter the letters for each side of the Letter Boxed puzzle. The solver will find word combinations that use all letters.</p>
     
     <div class="example">
-        <h3>Example Puzzles</h3>
-        <p>Try one of these example puzzles:</p>
+        <button id="loadTodayBtn" onclick="loadTodaysPuzzle()" style="width: 100%; margin-top: 10px;">
+            Load Today's NYT Puzzle
+        </button>
         <div class="side-input">
-            <label for="examplePuzzle">Select Example:</label>
+            <label for="examplePuzzle">Or try one of these example puzzles:</label>
             <select id="examplePuzzle" onchange="loadExample()" style="padding: 10px; border: 2px solid #ddd; border-radius: 4px; font-size: 16px; margin-bottom: 10px;">
                 <option value="JGH,NVY,EID,ORP">JGH / NVY / EID / ORP</option>
                 <option value="YFA,OTK,LGW,RNI">YFA / OTK / LGW / RNI</option>
@@ -222,10 +223,7 @@
         
         function savePuzzleToStorage() {
             const puzzle = {
-                side1: document.getElementById('side1').value,
-                side2: document.getElementById('side2').value,
-                side3: document.getElementById('side3').value,
-                side4: document.getElementById('side4').value,
+                sides: ['side1','side2','side3','side4'].map(id => document.getElementById(id).value),
                 maxSolutions: document.getElementById('maxSolutions').value
             };
             localStorage.setItem('letterBoxedPuzzle', JSON.stringify(puzzle));
@@ -236,10 +234,7 @@
                 const saved = localStorage.getItem('letterBoxedPuzzle');
                 if (saved) {
                     const puzzle = JSON.parse(saved);
-                    document.getElementById('side1').value = puzzle.side1 || '';
-                    document.getElementById('side2').value = puzzle.side2 || '';
-                    document.getElementById('side3').value = puzzle.side3 || '';
-                    document.getElementById('side4').value = puzzle.side4 || '';
+                    createBoard(puzzle.sides ?? ['','','','']);
                     document.getElementById('maxSolutions').value = puzzle.maxSolutions || '500';
                 }
             } catch (error) {
@@ -259,12 +254,58 @@
             const puzzleValue = puzzleSelect.value;
             const sides = puzzleValue.split(',');
 
-            document.getElementById('side1').value = sides[0];
-            document.getElementById('side2').value = sides[1];
-            document.getElementById('side3').value = sides[2];
-            document.getElementById('side4').value = sides[3];
-            // Save the example to localStorage
+            window.createBoard(sides);
+        }
+
+        window.createBoard = function(sidesData) {
+             if (!Array.isArray(sidesData) || sidesData.length !== 4 || !sidesData.every(s => typeof s === 'string')) {
+                alert('Invalid puzzle data format. Expected an array of 4 strings.');
+                return;
+            }
+            document.getElementById('side1').value = sidesData[0];
+            document.getElementById('side2').value = sidesData[1];
+            document.getElementById('side3').value = sidesData[2];
+            document.getElementById('side4').value = sidesData[3];
             savePuzzleToStorage();
+        }
+
+        window.loadTodaysPuzzle = async function() {
+            const btn = document.getElementById('loadTodayBtn');
+            const originalText = btn.textContent;
+            btn.textContent = 'Loading...';
+            btn.disabled = true;
+
+            try {
+                const url = 'https://www.nytimes.com/puzzles/letter-boxed';
+                let response;
+
+                // Try direct fetch first (works on deployed HTTPS sites)
+                try {
+                    response = await fetch(url);
+                } catch (e) {
+                    // Fall back to CORS proxy for localhost
+                    const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
+                    response = await fetch(proxyUrl);
+                }
+
+                const html = await response.text();
+
+                const regex = /window\.gameData.*?"sides"\s*:\s*(\[.*?\])/;
+                const match = html.match(regex);
+
+                if (!match) {
+                    alert('Failed to find puzzle data on the NYT page. The page format may have changed.');
+                    return;
+                }
+
+                const sidesData = JSON.parse(match[1]);
+                window.createBoard(sidesData);
+            } catch (error) {
+                alert('Failed to load today\'s puzzle: ' + error.message);
+            } finally {
+                btn.textContent = originalText;
+                btn.disabled = false;
+            }
         }
         
         window.solvePuzzle = function() {
