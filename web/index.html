@@ -191,6 +191,7 @@
             <div class="side-input">
                 <label for="examplePuzzle">Or try one of these example puzzles:</label>
                 <select id="examplePuzzle" onchange="loadExample()">
+                    <option value="">-- Select a puzzle --</option>
                     <option value="JGH,NVY,EID,ORP">JGH / NVY / EID / ORP</option>
                     <option value="YFA,OTK,LGW,RNI">YFA / OTK / LGW / RNI</option>
                     <option value="LHM,CIB,ANK,OUP">LHM / CIB / ANK / OUP</option>
@@ -351,6 +352,8 @@
                         }
                     }
 
+                    // Reset example puzzle dropdown when user edits
+                    document.getElementById('examplePuzzle').value = '';
                     savePuzzleToStorage();
                 });
 
@@ -381,8 +384,12 @@
         window.loadExample = function() {
             const puzzleSelect = document.getElementById('examplePuzzle');
             const puzzleValue = puzzleSelect.value;
-            const sides = puzzleValue.split(',');
 
+            if (!puzzleValue) {
+                return; // Don't do anything if placeholder is selected
+            }
+
+            const sides = puzzleValue.split(',');
             window.createBoard(sides);
         }
 
@@ -435,6 +442,8 @@
 
                 const sidesData = JSON.parse(match[1]);
                 window.createBoard(sidesData);
+                // Reset example puzzle dropdown when NYT puzzle is loaded
+                document.getElementById('examplePuzzle').value = '';
             } catch (error) {
                 alert('Failed to load today\'s puzzle: ' + error.message);
             } finally {
