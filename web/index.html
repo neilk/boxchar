@@ -20,22 +20,73 @@
         }
         
         .game-input {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             margin: 20px 0;
         }
-        
+
+        .letter-box-container {
+            width: 100%;
+            max-width: 500px;
+            aspect-ratio: 1;
+            position: relative;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 8px;
+            padding: 20px;
+        }
+
+        .letter-field {
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            font-size: clamp(16px, 3vw, 32px);
+            font-weight: bold;
+            text-transform: uppercase;
+            border: 2px solid #333;
+            border-radius: 4px;
+            background: white;
+            padding: 0;
+        }
+
+        .letter-field:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+        /* Top side - char00, char01, char02 (left to right) */
+        #char00 { grid-column: 2; grid-row: 1; }
+        #char01 { grid-column: 3; grid-row: 1; }
+        #char02 { grid-column: 4; grid-row: 1; }
+
+        /* Right side - char03, char04, char05 (top to bottom) */
+        #char03 { grid-column: 5; grid-row: 2; }
+        #char04 { grid-column: 5; grid-row: 3; }
+        #char05 { grid-column: 5; grid-row: 4; }
+
+        /* Left side - char06, char07, char08 (top to bottom) */
+        #char06 { grid-column: 1; grid-row: 2; }
+        #char07 { grid-column: 1; grid-row: 3; }
+        #char08 { grid-column: 1; grid-row: 4; }
+
+        /* Bottom side - char09, char10, char11 (left to right) */
+        #char09 { grid-column: 2; grid-row: 5; }
+        #char10 { grid-column: 3; grid-row: 5; }
+        #char11 { grid-column: 4; grid-row: 5; }
+
         .side-input {
             display: flex;
             flex-direction: column;
         }
-        
+
         .side-input label {
             font-weight: bold;
             margin-bottom: 5px;
         }
-        
+
         .side-input input {
             padding: 10px;
             border: 2px solid #ddd;
@@ -144,21 +195,26 @@
     <div class="container">
         <h2>Enter Puzzle</h2>
         <div class="game-input">
-            <div class="side-input">
-                <label for="side1">Side 1:</label>
-                <input type="text" id="side1" placeholder="e.g., JGH" maxlength="10">
-            </div>
-            <div class="side-input">
-                <label for="side2">Side 2:</label>
-                <input type="text" id="side2" placeholder="e.g., NVY" maxlength="10">
-            </div>
-            <div class="side-input">
-                <label for="side3">Side 3:</label>
-                <input type="text" id="side3" placeholder="e.g., EID" maxlength="10">
-            </div>
-            <div class="side-input">
-                <label for="side4">Side 4:</label>
-                <input type="text" id="side4" placeholder="e.g., ORP" maxlength="10">
+            <div class="letter-box-container">
+                <!-- Top side: char00, char01, char02 (left to right) -->
+                <input type="text" id="char00" class="letter-field" maxlength="1">
+                <input type="text" id="char01" class="letter-field" maxlength="1">
+                <input type="text" id="char02" class="letter-field" maxlength="1">
+
+                <!-- Right side: char03, char04, char05 (top to bottom) -->
+                <input type="text" id="char03" class="letter-field" maxlength="1">
+                <input type="text" id="char04" class="letter-field" maxlength="1">
+                <input type="text" id="char05" class="letter-field" maxlength="1">
+
+                <!-- Left side: char06, char07, char08 (top to bottom) -->
+                <input type="text" id="char06" class="letter-field" maxlength="1">
+                <input type="text" id="char07" class="letter-field" maxlength="1">
+                <input type="text" id="char08" class="letter-field" maxlength="1">
+
+                <!-- Bottom side: char09, char10, char11 (left to right) -->
+                <input type="text" id="char09" class="letter-field" maxlength="1">
+                <input type="text" id="char10" class="letter-field" maxlength="1">
+                <input type="text" id="char11" class="letter-field" maxlength="1">
             </div>
         </div>
 
@@ -180,6 +236,13 @@
         
         let wasm = null;
         let dictionaryInitialized = false;
+
+        const SIDE_FIELDS = [
+            ['char00', 'char01', 'char02'], // side1
+            ['char03', 'char04', 'char05'], // side2
+            ['char06', 'char07', 'char08'], // side3
+            ['char09', 'char10', 'char11']  // side4
+        ]
 
         async function loadAndInitializeDictionary() {
             try {
@@ -221,20 +284,30 @@
             }
         }
         
+        function getSidesFromFields() { 
+            // Gather letters from individual fields into sides array
+            return SIDE_FIELDS.map(fieldIds => 
+                fieldIds.map(
+                    id => document.getElementById(id).value
+                ).join('')
+            );
+        }
+            
+        
         function savePuzzleToStorage() {
             const puzzle = {
-                sides: ['side1','side2','side3','side4'].map(id => document.getElementById(id).value),
+                sides: getSidesFromFields(),
                 maxSolutions: document.getElementById('maxSolutions').value
             };
             localStorage.setItem('letterBoxedPuzzle', JSON.stringify(puzzle));
         }
-        
+
         function loadPuzzleFromStorage() {
             try {
                 const saved = localStorage.getItem('letterBoxedPuzzle');
                 if (saved) {
                     const puzzle = JSON.parse(saved);
-                    createBoard(puzzle.sides ?? ['','','','']);
+                    window.createBoard(puzzle.sides ?? ['','','','']);
                     document.getElementById('maxSolutions').value = puzzle.maxSolutions || '500';
                 }
             } catch (error) {
@@ -244,9 +317,55 @@
         
         function setupInputListeners() {
             // Save to localStorage whenever input changes
-            ['side1', 'side2', 'side3', 'side4', 'maxSolutions'].forEach(id => {
-                document.getElementById(id).addEventListener('input', savePuzzleToStorage);
+            const letterFields = [];
+            for (let i = 0; i < 12; i++) {
+                const id = `char${i.toString().padStart(2, '0')}`;
+                letterFields.push(id);
+            }
+
+            letterFields.forEach((id, index) => {
+                const field = document.getElementById(id);
+
+                field.addEventListener('input', (e) => {
+                    const value = e.target.value.toUpperCase();
+
+                    // Only allow single uppercase letter
+                    if (value.length > 0) {
+                        e.target.value = value[value.length - 1].replace(/[^A-Z]/g, '');
+
+                        // Auto-advance to next field if we typed a letter
+                        if (e.target.value && index < letterFields.length - 1) {
+                            const nextField = document.getElementById(letterFields[index + 1]);
+                            nextField.focus();
+                            nextField.select();
+                        }
+                    }
+
+                    savePuzzleToStorage();
+                });
+
+                field.addEventListener('keydown', (e) => {
+                    // Handle backspace to go to previous field
+                    if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                        e.preventDefault();
+                        const prevField = document.getElementById(letterFields[index - 1]);
+                        prevField.focus();
+                        prevField.select();
+                    }
+                });
+
+                field.addEventListener('click', (e) => {
+                    // Select all text when clicking on a field
+                    e.target.select();
+                });
+
+                field.addEventListener('focus', (e) => {
+                    // Select all text when focusing on a field
+                    e.target.select();
+                });
             });
+
+            document.getElementById('maxSolutions').addEventListener('input', savePuzzleToStorage);
         }
         
         window.loadExample = function() {
@@ -258,14 +377,20 @@
         }
 
         window.createBoard = function(sidesData) {
-             if (!Array.isArray(sidesData) || sidesData.length !== 4 || !sidesData.every(s => typeof s === 'string')) {
+            if (!Array.isArray(sidesData) || sidesData.length !== 4 || !sidesData.every(s => typeof s === 'string')) {
                 alert('Invalid puzzle data format. Expected an array of 4 strings.');
                 return;
             }
-            document.getElementById('side1').value = sidesData[0];
-            document.getElementById('side2').value = sidesData[1];
-            document.getElementById('side3').value = sidesData[2];
-            document.getElementById('side4').value = sidesData[3];
+
+            // Populate individual character fields from sides data
+            // Side 1 (top): char00, char01, char02
+            for (let i = 0; i <= 3; i++) {
+                const chars = sidesData[i].split('');
+                SIDE_FIELDS[i].forEach((id, c) => {
+                    document.getElementById(id).value = (chars[c] || '').toUpperCase();
+                });
+            }
+
             savePuzzleToStorage();
         }
 
@@ -314,10 +439,7 @@
                 return;
             }
 
-            const side1 = document.getElementById('side1').value.toUpperCase().trim();
-            const side2 = document.getElementById('side2').value.toUpperCase().trim();
-            const side3 = document.getElementById('side3').value.toUpperCase().trim();
-            const side4 = document.getElementById('side4').value.toUpperCase().trim();
+            const [side1, side2, side3, side4] = getSidesFromFields().map(s => s.toUpperCase().trim());
             const maxSolutionsInput = document.getElementById('maxSolutions').value;
             const maxSolutions = parseInt(maxSolutionsInput) || 500;
 
