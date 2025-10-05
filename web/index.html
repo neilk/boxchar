@@ -169,62 +169,72 @@
             color: #28a745;
             font-weight: bold;
         }
+
+        .side-input select {
+            padding: 10px; 
+            border: 2px solid #ddd; 
+            border-radius: 4px; 
+            font-size: 16px; 
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
     <h1>Letter Boxed Solver</h1>
     <p>Enter the letters for each side of the Letter Boxed puzzle. The solver will find word combinations that use all letters.</p>
     
-    <div class="example">
-        <button id="loadTodayBtn" onclick="loadTodaysPuzzle()" style="width: 100%; margin-top: 10px;">
-            Load Today's NYT Puzzle
-        </button>
-        <div class="side-input">
-            <label for="examplePuzzle">Or try one of these example puzzles:</label>
-            <select id="examplePuzzle" onchange="loadExample()" style="padding: 10px; border: 2px solid #ddd; border-radius: 4px; font-size: 16px; margin-bottom: 10px;">
-                <option value="JGH,NVY,EID,ORP">JGH / NVY / EID / ORP</option>
-                <option value="YFA,OTK,LGW,RNI">YFA / OTK / LGW / RNI</option>
-                <option value="LHM,CIB,ANK,OUP">LHM / CIB / ANK / OUP</option>
-                <option value="GIY,ERC,XHA,LOP">GIY / ERC / XHA / LOP</option>
-                <option value="PRC,YAN,LKH,SIO">PRC / YAN / LKH / SIO</option>
-                <option value="VYQ,FIG,OTE,XLU">VYQ / FIG / OTE / XLU</option>
-            </select>
-        </div>
-    </div>
-
-    <div class="container">
-        <h2>Enter Puzzle</h2>
-        <div class="game-input">
-            <div class="letter-box-container">
-                <!-- Top side: char00, char01, char02 (left to right) -->
-                <input type="text" id="char00" class="letter-field" maxlength="1">
-                <input type="text" id="char01" class="letter-field" maxlength="1">
-                <input type="text" id="char02" class="letter-field" maxlength="1">
-
-                <!-- Right side: char03, char04, char05 (top to bottom) -->
-                <input type="text" id="char03" class="letter-field" maxlength="1">
-                <input type="text" id="char04" class="letter-field" maxlength="1">
-                <input type="text" id="char05" class="letter-field" maxlength="1">
-
-                <!-- Left side: char06, char07, char08 (top to bottom) -->
-                <input type="text" id="char06" class="letter-field" maxlength="1">
-                <input type="text" id="char07" class="letter-field" maxlength="1">
-                <input type="text" id="char08" class="letter-field" maxlength="1">
-
-                <!-- Bottom side: char09, char10, char11 (left to right) -->
-                <input type="text" id="char09" class="letter-field" maxlength="1">
-                <input type="text" id="char10" class="letter-field" maxlength="1">
-                <input type="text" id="char11" class="letter-field" maxlength="1">
+    <section id="main">
+        <div class="example">
+            <button id="loadTodayBtn" onclick="loadTodaysPuzzle()" style="width: 100%; margin-top: 10px;">
+                Load Today's NYT Puzzle
+            </button>
+            <div class="side-input">
+                <label for="examplePuzzle">Or try one of these example puzzles:</label>
+                <select id="examplePuzzle" onchange="loadExample()">
+                    <option value="JGH,NVY,EID,ORP">JGH / NVY / EID / ORP</option>
+                    <option value="YFA,OTK,LGW,RNI">YFA / OTK / LGW / RNI</option>
+                    <option value="LHM,CIB,ANK,OUP">LHM / CIB / ANK / OUP</option>
+                    <option value="GIY,ERC,XHA,LOP">GIY / ERC / XHA / LOP</option>
+                    <option value="PRC,YAN,LKH,SIO">PRC / YAN / LKH / SIO</option>
+                    <option value="VYQ,FIG,OTE,XLU">VYQ / FIG / OTE / XLU</option>
+                </select>
             </div>
         </div>
 
-        <div class="side-input" style="margin-top: 20px;">
-            <label for="maxSolutions">Max Solutions:</label>
-            <input type="number" id="maxSolutions" value="500" min="1" max="65535" style="padding: 10px; border: 2px solid #ddd; border-radius: 4px; font-size: 16px;">
-        </div>
+        <div class="container">
+            <h2>Enter Puzzle</h2>
+            <div class="game-input">
+                <div class="letter-box-container">
+                    <!-- Top side: char00, char01, char02 (left to right) -->
+                    <input type="text" id="char00" class="letter-field" maxlength="1">
+                    <input type="text" id="char01" class="letter-field" maxlength="1">
+                    <input type="text" id="char02" class="letter-field" maxlength="1">
 
-        <button id="solveBtn" onclick="solvePuzzle()">Solve Puzzle</button>
-    </div>
+                    <!-- Right side: char03, char04, char05 (top to bottom) -->
+                    <input type="text" id="char03" class="letter-field" maxlength="1">
+                    <input type="text" id="char04" class="letter-field" maxlength="1">
+                    <input type="text" id="char05" class="letter-field" maxlength="1">
+
+                    <!-- Left side: char06, char07, char08 (top to bottom) -->
+                    <input type="text" id="char06" class="letter-field" maxlength="1">
+                    <input type="text" id="char07" class="letter-field" maxlength="1">
+                    <input type="text" id="char08" class="letter-field" maxlength="1">
+
+                    <!-- Bottom side: char09, char10, char11 (left to right) -->
+                    <input type="text" id="char09" class="letter-field" maxlength="1">
+                    <input type="text" id="char10" class="letter-field" maxlength="1">
+                    <input type="text" id="char11" class="letter-field" maxlength="1">
+                </div>
+            </div>
+
+            <div class="side-input" style="margin-top: 20px;">
+                <label for="maxSolutions">Max Solutions:</label>
+                <input type="number" id="maxSolutions" value="500" min="1" max="65535">
+            </div>
+
+            <button id="solveBtn" onclick="solvePuzzle()">Solve Puzzle</button>
+        </div>
+    </section>
 
     <div class="container" id="results" style="display: none;">
         <h2>Solutions</h2>
