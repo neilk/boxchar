@@ -2,6 +2,8 @@
 
 A solver for the New York Times word puzzle, "Letter Boxed". 
 
+Try it out at https://neilk.github.io/boxchar/ !
+
 ## Why?
 
 The New York Times puzzle page is very popular! Yet, the existing solvers that I know of suck.
