@@ -5,6 +5,7 @@ import { svelte } from '@sveltejs/vite-plugin-svelte'
 export default defineConfig({
   plugins: [svelte()],
   base: '/boxchar/',
+  appType: 'mpa', // Disable SPA fallback
   server: {
     port: 8000,
     host: true // Expose on network
