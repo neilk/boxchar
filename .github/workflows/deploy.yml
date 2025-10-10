@@ -32,13 +32,30 @@ jobs:
       - name: Build WASM
         run: ./build-web.sh
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: './web/svelte-app/package-lock.json'
+
+      - name: Install dependencies
+        run: |
+          cd web/svelte-app
+          npm ci
+
+      - name: Build Svelte app
+        run: |
+          cd web/svelte-app
+          npm run build
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: './web'
+          path: './web/svelte-app/dist'
 
   deploy:
     environment:
