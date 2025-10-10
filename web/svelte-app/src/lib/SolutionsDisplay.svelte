@@ -87,24 +87,24 @@
   }
 
   .error {
-    color: #dc3545;
-    background: #f8d7da;
+    color: var(--color-error);
+    background: var(--color-error-bg);
     padding: 10px;
     border-radius: 4px;
     margin: 10px 0;
   }
 
   .timing {
-    color: #28a745;
+    color: var(--color-success);
     font-weight: bold;
   }
 
   .solution-segment {
-    background: white;
+    background: var(--color-bg-white);
     padding: 20px;
     margin: 20px 0;
     border-radius: 8px;
-    border: 2px solid #007bff;
+    border: 2px solid var(--color-primary);
   }
 
   .segment-header {
@@ -113,39 +113,39 @@
     align-items: center;
     margin-bottom: 15px;
     padding-bottom: 10px;
-    border-bottom: 2px solid #e0e0e0;
+    border-bottom: 2px solid var(--color-border-light);
   }
 
   .segment-title {
     font-size: 20px;
     font-weight: bold;
-    color: #007bff;
+    color: var(--color-primary);
   }
 
   .segment-count {
     font-size: 16px;
-    color: #666;
-    background: #f0f0f0;
+    color: var(--color-text-muted);
+    background: var(--color-bg-light);
     padding: 5px 12px;
     border-radius: 12px;
   }
 
   .solution {
-    background: white;
+    background: var(--color-bg-white);
     padding: 15px;
     margin: 10px 0;
     border-radius: 4px;
-    border-left: 4px solid #007bff;
+    border-left: 4px solid var(--color-primary);
   }
 
   .solution-words {
     font-size: 18px;
     font-weight: bold;
-    color: #007bff;
+    color: var(--color-primary);
   }
 
   .load-more-btn {
-    background: #6c757d;
+    background: var(--color-bg-secondary);
     color: white;
     border: none;
     padding: 12px 24px;
@@ -157,6 +157,6 @@
   }
 
   .load-more-btn:hover {
-    background: #5a6268;
+    background: var(--color-bg-secondary-hover);
   }
 </style>

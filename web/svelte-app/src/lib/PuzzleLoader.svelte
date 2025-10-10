@@ -92,11 +92,11 @@
 
   .puzzle-loader-label {
     font-weight: 600;
-    color: #333;
+    color: var(--color-text);
   }
 
   .pill-button {
-    background: #007bff;
+    background: var(--color-primary);
     color: white;
     border: none;
     padding: 10px 20px;
@@ -108,11 +108,11 @@
   }
 
   .pill-button:hover:not(:disabled) {
-    background: #0056b3;
+    background: var(--color-primary-hover);
   }
 
   .pill-button:disabled {
-    background: #ccc;
+    background: var(--color-disabled);
     cursor: not-allowed;
   }
 
@@ -122,7 +122,7 @@
   }
 
   .pill-select {
-    background: #007bff;
+    background: var(--color-primary);
     color: white;
     border: none;
     padding: 10px 35px 10px 20px;
@@ -136,7 +136,7 @@
   }
 
   .pill-select:hover {
-    background: #0056b3;
+    background: var(--color-primary-hover);
   }
 
   .pill-select-wrapper::after {

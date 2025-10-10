@@ -86,16 +86,16 @@
     font-size: clamp(16px, 3vw, 32px);
     font-weight: bold;
     text-transform: uppercase;
-    border: 2px solid #333;
+    border: 2px solid var(--color-border);
     border-radius: 4px;
-    background: white;
+    background: var(--color-bg-white);
     padding: 0;
   }
 
   .letter-field:focus {
     outline: none;
-    border-color: #007bff;
-    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
   }
 
   /* Top side - char00, char01, char02 (left to right) */
