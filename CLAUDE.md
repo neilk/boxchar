@@ -105,3 +105,74 @@ entail processing the wordlist twice; one for "forwards" and once for "backwards
 - `data/dictionary.txt` - Word dictionary for validation
 - `data/dictionary_test.txt` - Test word list
 - `data/answers.txt` - Valid answers/solutions
+
+## Web Application
+
+### Current Implementation (Svelte)
+
+The web application has been migrated from vanilla HTML/JS to Svelte for better state management and future game features.
+
+**Location**: `web/svelte-app/`
+
+**Commands**:
+- `cd web/svelte-app && npm install` - Install dependencies
+- `npm run dev` - Start development server (http://localhost:5173/)
+- `npm run build` - Build for production
+
+**Architecture**:
+- **Stores** (`src/stores/`):
+  - `puzzle.js` - Reactive puzzle state (sides, solutions, solving status)
+  - `wasm.js` - WASM module and dictionary initialization
+
+- **Components** (`src/lib/`):
+  - `PuzzleLoader.svelte` - Load NYT or sample puzzles
+  - `LetterBox.svelte` - 12-field letter input grid with auto-navigation
+  - `SolutionsDisplay.svelte` - Segmented solution display with pagination
+
+- **Key Features**:
+  - Reactive data model - puzzle state changes automatically update UI
+  - localStorage integration for puzzle persistence
+  - Sequential WASM initialization to avoid race conditions
+  - Hardcoded max solutions: 10000
+
+### Future Development
+
+**Planned Features**:
+
+1. **Visual Solution Path Animation**
+   - Add canvas overlay inside the letter box square
+   - Animate the path of solutions "bouncing" between letters
+   - Show visual connections between consecutive letters in a word
+   - Highlight letters as they are visited in sequence
+
+2. **Interactive Letter Tracing Game**
+   - Canvas-based bouncing ball physics simulation
+   - User can trace paths by "bouncing" between letters
+   - Letters react when "hit" by the ball (visual feedback)
+   - Real-time validation of valid word formation
+   - Track which letters have been visited
+   - Detect when user completes a valid word
+
+3. **Design Goals**:
+   - Keep the website extremely minimal
+   - Simple, clean animations (use Svelte transitions and `svelte/motion`)
+   - Mix declarative UI (Svelte) with imperative canvas for game elements
+   - Maintain small bundle size
+
+**Why Svelte**:
+- Minimal runtime overhead (compiles to vanilla JS)
+- Built-in reactivity perfect for game state
+- Excellent animation primitives (`svelte/motion`, `svelte/transition`)
+- Easy canvas integration alongside components
+- Simple learning curve
+
+**Implementation Notes**:
+- Game state should live in Svelte stores
+- Canvas can be a Svelte component that subscribes to stores
+- Letter highlighting/reactions can use Svelte transitions
+- Ball physics can use `svelte/motion` springs for natural movement
+- Consider splitting game mode and solver mode into separate views
+
+### Legacy Version
+
+The original vanilla HTML/JS version is preserved at `web/index.html` for reference.
