@@ -52,85 +52,18 @@
 </script>
 
 <div class="letter-box-container">
-  <!-- Top side: char00, char01, char02 (left to right) -->
-  <input type="text" id="char00" class="letter-field" maxlength="1"
-    value={$puzzleFields[0]}
-    on:input={(e) => handleInput(0, e)}
-    on:keydown={(e) => handleKeydown(0, e)}
-    on:click={handleClick}
-    on:focus={handleClick}>
-  <input type="text" id="char01" class="letter-field" maxlength="1"
-    value={$puzzleFields[1]}
-    on:input={(e) => handleInput(1, e)}
-    on:keydown={(e) => handleKeydown(1, e)}
-    on:click={handleClick}
-    on:focus={handleClick}>
-  <input type="text" id="char02" class="letter-field" maxlength="1"
-    value={$puzzleFields[2]}
-    on:input={(e) => handleInput(2, e)}
-    on:keydown={(e) => handleKeydown(2, e)}
-    on:click={handleClick}
-    on:focus={handleClick}>
-
-  <!-- Right side: char03, char04, char05 (top to bottom) -->
-  <input type="text" id="char03" class="letter-field" maxlength="1"
-    value={$puzzleFields[3]}
-    on:input={(e) => handleInput(3, e)}
-    on:keydown={(e) => handleKeydown(3, e)}
-    on:click={handleClick}
-    on:focus={handleClick}>
-  <input type="text" id="char04" class="letter-field" maxlength="1"
-    value={$puzzleFields[4]}
-    on:input={(e) => handleInput(4, e)}
-    on:keydown={(e) => handleKeydown(4, e)}
-    on:click={handleClick}
-    on:focus={handleClick}>
-  <input type="text" id="char05" class="letter-field" maxlength="1"
-    value={$puzzleFields[5]}
-    on:input={(e) => handleInput(5, e)}
-    on:keydown={(e) => handleKeydown(5, e)}
-    on:click={handleClick}
-    on:focus={handleClick}>
-
-  <!-- Left side: char06, char07, char08 (top to bottom) -->
-  <input type="text" id="char06" class="letter-field" maxlength="1"
-    value={$puzzleFields[6]}
-    on:input={(e) => handleInput(6, e)}
-    on:keydown={(e) => handleKeydown(6, e)}
-    on:click={handleClick}
-    on:focus={handleClick}>
-  <input type="text" id="char07" class="letter-field" maxlength="1"
-    value={$puzzleFields[7]}
-    on:input={(e) => handleInput(7, e)}
-    on:keydown={(e) => handleKeydown(7, e)}
-    on:click={handleClick}
-    on:focus={handleClick}>
-  <input type="text" id="char08" class="letter-field" maxlength="1"
-    value={$puzzleFields[8]}
-    on:input={(e) => handleInput(8, e)}
-    on:keydown={(e) => handleKeydown(8, e)}
-    on:click={handleClick}
-    on:focus={handleClick}>
-
-  <!-- Bottom side: char09, char10, char11 (left to right) -->
-  <input type="text" id="char09" class="letter-field" maxlength="1"
-    value={$puzzleFields[9]}
-    on:input={(e) => handleInput(9, e)}
-    on:keydown={(e) => handleKeydown(9, e)}
-    on:click={handleClick}
-    on:focus={handleClick}>
-  <input type="text" id="char10" class="letter-field" maxlength="1"
-    value={$puzzleFields[10]}
-    on:input={(e) => handleInput(10, e)}
-    on:keydown={(e) => handleKeydown(10, e)}
-    on:click={handleClick}
-    on:focus={handleClick}>
-  <input type="text" id="char11" class="letter-field" maxlength="1"
-    value={$puzzleFields[11]}
-    on:input={(e) => handleInput(11, e)}
-    on:keydown={(e) => handleKeydown(11, e)}
-    on:click={handleClick}
-    on:focus={handleClick}>
+  {#each Array(12) as _, index}
+    <input
+      type="text"
+      id="char{String(index).padStart(2, '0')}"
+      class="letter-field"
+      maxlength="1"
+      value={$puzzleFields[index]}
+      on:input={(e) => handleInput(index, e)}
+      on:keydown={(e) => handleKeydown(index, e)}
+      on:click={handleClick}
+      on:focus={handleClick}>
+  {/each}
 </div>
 
 <style>
