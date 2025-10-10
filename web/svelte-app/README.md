@@ -1,33 +1,115 @@
-# Svelte + Vite
+# Letter Boxed Solver - Svelte Web App
 
-This template should help get you started developing with Svelte in Vite.
+A web interface for the Letter Boxed puzzle solver, built with Svelte and Vite, powered by Rust/WASM.
 
-## Recommended IDE Setup
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v16+)
+- The WASM package must be built first from the parent directory: `cd ../.. && ./build-web.sh`
+
+### Installation
+
+```bash
+npm install
+```
+
+## Development
+
+### Development Mode
+
+Run the Vite dev server with Hot Module Replacement (HMR):
+
+```bash
+npm run dev
+```
+
+- Opens at http://localhost:5173/
+- Changes to `.svelte` files update instantly in the browser
+- Source maps enabled for debugging
+- Optimized for development speed, not performance
+
+### Production Build
+
+Build optimized static files for deployment:
+
+```bash
+npm run build
+```
+
+- Compiles Svelte to vanilla JavaScript
+- Minifies and tree-shakes code
+- Outputs to `dist/` directory
+- Total bundle: ~50 KB (gzipped) + 2.2 MB dictionary + 79 KB WASM
+
+### Preview Production Build
+
+Test the production build locally:
+
+```bash
+npm run preview
+```
+
+- Serves the `dist/` folder at http://localhost:4173/
+- Use this to verify the production build works before deploying
+
+## Deployment
+
+The `dist/` folder contains everything needed for deployment:
+- Static HTML, CSS, JavaScript files
+- WASM module and dictionary
+- Can be served by any static file server
+- No server-side processing required
+
+Deploy to:
+- GitHub Pages
+- Netlify
+- Vercel
+- Any static hosting service
+- Or use: `npx http-server dist/`
+
+## Architecture
+
+### Stores (`src/stores/`)
+- `puzzle.js` - Reactive puzzle state (sides, solutions, solving status)
+- `wasm.js` - WASM module and dictionary initialization
+
+### Components (`src/lib/`)
+- `PuzzleLoader.svelte` - Load NYT or sample puzzles
+- `LetterBox.svelte` - 12-field letter input grid
+- `SolutionsDisplay.svelte` - Segmented solution display with pagination
+
+### Key Features
+- Reactive data model - state changes automatically update UI
+- localStorage integration for puzzle persistence
+- Sequential WASM initialization to avoid race conditions
+- Dictionary parsed once on load (~2 second initialization for 180K words)
+
+## Future Optimizations
+
+- Pre-process dictionary into binary format (using Serde) for faster loading
+- Add progress indicator during dictionary initialization
+- Cache parsed dictionary in IndexedDB
+
+---
+
+## Svelte + Vite Template Information
+
+This template provides a minimal setup for Svelte with Vite and HMR.
+
+### Recommended IDE Setup
 
 [VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
 
-## Need an official Svelte framework?
-
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
-
-## Technical considerations
+### Technical Considerations
 
 **Why use this over SvelteKit?**
 
 - It brings its own routing solution which might not be preferable for some users.
 - It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
 
-This template contains as little as possible to get started with Vite + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
-
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
-
-**Why include `.vscode/extensions.json`?**
-
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
-
-**Why enable `checkJs` in the JS template?**
-
-It is likely that most cases of changing variable types in runtime are likely to be accidental, rather than deliberate. This provides advanced typechecking out of the box. Should you like to take advantage of the dynamically-typed nature of JavaScript, it is trivial to change the configuration.
+This template contains as little as possible to get started with Vite + Svelte, while taking into account the developer experience with regards to HMR and intellisense.
 
 **Why is HMR not preserving my local component state?**
 

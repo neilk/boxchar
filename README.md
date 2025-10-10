@@ -90,12 +90,59 @@ work-kaif-fragrantly
 ./target/release/boxchar --board=data/board.txt --max-solutions=10  0.78s user 0.05s system 70% cpu 1.183 total
 ```
 
-## Web
+## Web Application
+
+The web application is built with Svelte and powered by Rust/WASM.
+
+### Building the WASM Package
+
+First, build the WASM package from the Rust code:
 
 ```bash
 $ ./build-web.sh
-$ npx http-server -p 8000
 ```
+
+This creates the WASM files in `web/pkg/` and copies necessary files to the web directory.
+
+### Development Mode
+
+Run the Svelte development server with hot module replacement:
+
+```bash
+$ cd web/svelte-app
+$ npm install  # First time only
+$ npm run dev
+```
+
+Opens at http://localhost:5173/
+- Changes update instantly in the browser
+- Source maps for debugging
+- Optimized for development speed
+
+### Production Build
+
+Build optimized static files for deployment:
+
+```bash
+$ cd web/svelte-app
+$ npm run build
+```
+
+- Outputs to `dist/` directory
+- Total bundle: ~50 KB (gzipped) + 2.2 MB dictionary + 79 KB WASM
+- Can be deployed to any static hosting (GitHub Pages, Netlify, Vercel, etc.)
+
+### Preview Production Build
+
+Test the production build locally:
+
+```bash
+$ cd web/svelte-app
+$ npm run preview
+```
+
+Opens at http://localhost:4173/
+
 ![Screenshot of WASM site](solver-web.png)
 
 
