@@ -86,6 +86,7 @@
     font-size: clamp(16px, 3vw, 32px);
     font-weight: bold;
     text-transform: uppercase;
+    color: var(--color-text-input);
     border: 2px solid var(--color-border);
     border-radius: 4px;
     background: var(--color-bg-white);
