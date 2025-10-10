@@ -4,8 +4,6 @@
   font-weight: 400;
 
   color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -27,22 +25,70 @@
   --color-text: #333;
   --color-text-muted: #666;
   --color-text-input: #000;
-  --color-bg-white: white;
+  --color-bg-white: #fff;
   --color-bg-light: #f0f0f0;
   --color-bg-secondary: #6c757d;
   --color-bg-secondary-hover: #5a6268;
   --color-border: #333;
   --color-border-light: #e0e0e0;
   --color-disabled: #ccc;
+
+  /* Page backgrounds */
+  --color-bg-page: #ffffff;
+  --color-bg-container: #f5f5f5;
+  --color-bg-example: #e7f3ff;
+
+  /* Link colors */
+  --color-link: #646cff;
+  --color-link-hover: #535bf2;
+
+  /* Button colors */
+  --color-button-bg: #1a1a1a;
+  --color-button-border: #646cff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    color: #cccccc;
+    background-color: #000000;
+
+    /* To get a basic start on dark colors,
+       1. delete all the colors defined here,
+       2. run ./endarken-css-vars.zsh
+       3. paste the output */
+    --color-primary: #007bff;
+    --color-primary-hover: #4da3ff;
+    --color-primary-light: rgba(0, 123, 255, 0.1);
+    --color-success: #57d674;
+    --color-error: #c72334;
+    --color-error-bg: #27070a;
+    --color-text: #cccccc;
+    --color-text-muted: #999999;
+    --color-text-input: #ffffff;
+    --color-bg-white: #000000;
+    --color-bg-light: #0f0f0f;
+    --color-bg-secondary: #818a92;
+    --color-bg-secondary-hover: #979fa5;
+    --color-border: #cccccc;
+    --color-border-light: #1f1f1f;
+    --color-disabled: #333333;
+    --color-bg-page: #000000;
+    --color-bg-container: #0a0a0a;
+    --color-bg-example: #000d1a;
+    --color-link: #000899;
+    --color-link-hover: #0d15ab;
+    --color-button-bg: #e6e6e6;
+    --color-button-border: #000899;
+  }
 }
 
 a {
   font-weight: 500;
-  color: #646cff;
+  color: var(--color-link);
   text-decoration: inherit;
 }
 a:hover {
-  color: #535bf2;
+  color: var(--color-link-hover);
 }
 
 body {
@@ -76,12 +122,12 @@ button {
   font-size: 1em;
   font-weight: 500;
   font-family: inherit;
-  background-color: #1a1a1a;
+  background-color: var(--color-button-bg);
   cursor: pointer;
   transition: border-color 0.25s;
 }
 button:hover {
-  border-color: #646cff;
+  border-color: var(--color-button-border);
 }
 button:focus,
 button:focus-visible {
@@ -90,13 +136,7 @@ button:focus-visible {
 
 @media (prefers-color-scheme: light) {
   :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
+    color: var(--color-text);
+    background-color: var(--color-bg-page);
   }
 }

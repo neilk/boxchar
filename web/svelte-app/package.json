@@ -11,6 +11,7 @@
   },
   "devDependencies": {
     "@sveltejs/vite-plugin-svelte": "^6.2.1",
+    "color-convert": "^3.1.2",
     "svelte": "^5.39.6",
     "vite": "^7.1.7"
   }

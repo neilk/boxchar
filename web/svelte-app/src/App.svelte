@@ -121,14 +121,14 @@
   }
 
   .container {
-    background: #f5f5f5;
+    background: var(--color-bg-container);
     padding: 20px;
     border-radius: 8px;
     margin: 20px 0;
   }
 
   .example {
-    background: #e7f3ff;
+    background: var(--color-bg-example);
     padding: 15px;
     border-radius: 4px;
     margin: 20px 0;
@@ -142,7 +142,7 @@
   }
 
   .solve-btn {
-    background: #007bff;
+    background: var(--color-primary);
     color: white;
     border: none;
     padding: 12px 24px;
@@ -154,17 +154,17 @@
   }
 
   .solve-btn:hover:not(:disabled) {
-    background: #0056b3;
+    background: var(--color-primary-hover);
   }
 
   .solve-btn:disabled {
-    background: #ccc;
+    background: var(--color-disabled);
     cursor: not-allowed;
   }
 
   .error {
-    color: #dc3545;
-    background: #f8d7da;
+    color: var(--color-error);
+    background: var(--color-error-bg);
     padding: 10px;
     border-radius: 4px;
     margin: 10px 0;
