@@ -18,7 +18,7 @@ export async function initializeWasm() {
     wasmModule.set(wasmInstance);
 
     // Then load and initialize dictionary
-    const response = await fetch('/dictionary.txt');
+    const response = await fetch(`${import.meta.env.BASE_URL}dictionary.txt`);
     const arrayBuffer = await response.arrayBuffer();
     const dictionaryData = new Uint8Array(arrayBuffer);
 

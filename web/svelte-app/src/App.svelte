@@ -48,15 +48,16 @@
     setTimeout(() => {
       try {
         const startTime = performance.now();
-        // Convert fields to sides format for WASM
+        // Convert fields to sides format for WASM (top, right, bottom, left - clockwise)
         const sides = [
           $puzzleFields.slice(0, 3).join(''),   // top
           $puzzleFields.slice(3, 6).join(''),   // right
-          $puzzleFields.slice(6, 9).join(''),   // left
-          $puzzleFields.slice(9, 12).join('')   // bottom
+          $puzzleFields.slice(9, 12).join(''),  // bottom
+          $puzzleFields.slice(6, 9).join('')    // left
         ].map(s => s.toLowerCase());
         const maxSolutions = 10000;
 
+        console.dir({sides, solveFunction});
         const result = solveFunction(sides, maxSolutions);
         const endTime = performance.now();
 
