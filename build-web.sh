@@ -15,4 +15,5 @@ cp data/dictionary.txt web/svelte-app/public/
 echo "✅ Web build complete!"
 echo "🚀 WASM files are in 'web/svelte-app/src/pkg/'"
 echo "💡 To develop: cd web/svelte-app && npm run dev"
-echo "💡 To build: cd web/svelte-app && npm run build"
+echo "💡 To build for local: cd web/svelte-app && npm run build"
+echo "💡 To build for GitHub Pages: cd web/svelte-app && npm run build:github"
