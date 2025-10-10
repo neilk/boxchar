@@ -121,7 +121,7 @@ npm install  # First time only
 npm run dev
 ```
 
-Opens at http://localhost:5173/
+Opens at http://localhost:8000/
 - Changes update instantly in the browser
 - Source maps for debugging
 - Optimized for development speed
