@@ -338,11 +338,6 @@
                 </div>
             </div>
 
-            <div class="side-input" style="margin-top: 20px;">
-                <label for="maxSolutions">Max Solutions:</label>
-                <input type="number" id="maxSolutions" value="500" min="1" max="65535">
-            </div>
-
             <button id="solveBtn" onclick="solvePuzzle()">Solve Puzzle</button>
         </div>
     </section>
@@ -417,8 +412,7 @@
         
         function savePuzzleToStorage() {
             const puzzle = {
-                sides: getSidesFromFields(),
-                maxSolutions: document.getElementById('maxSolutions').value
+                sides: getSidesFromFields()
             };
             localStorage.setItem('letterBoxedPuzzle', JSON.stringify(puzzle));
         }
@@ -429,7 +423,6 @@
                 if (saved) {
                     const puzzle = JSON.parse(saved);
                     window.createBoard(puzzle.sides ?? ['','','','']);
-                    document.getElementById('maxSolutions').value = puzzle.maxSolutions || '500';
                 }
             } catch (error) {
                 console.warn('Failed to load saved puzzle:', error);
@@ -485,8 +478,6 @@
                     e.target.select();
                 });
             });
-
-            document.getElementById('maxSolutions').addEventListener('input', savePuzzleToStorage);
         }
         
         window.loadExample = function() {
@@ -570,16 +561,10 @@
             }
 
             const [side1, side2, side3, side4] = getSidesFromFields().map(s => s.toUpperCase().trim());
-            const maxSolutionsInput = document.getElementById('maxSolutions').value;
-            const maxSolutions = parseInt(maxSolutionsInput) || 500;
+            const maxSolutions = 10000;
 
             if (!side1 || !side2 || !side3 || !side4) {
                 showError('Please fill in all four sides of the puzzle.');
-                return;
-            }
-
-            if (maxSolutions < 1 || maxSolutions > 65535) {
-                showError('Max solutions must be between 1 and 65535.');
                 return;
             }
 
