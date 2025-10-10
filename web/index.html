@@ -382,14 +382,13 @@
         
         async function run() {
             try {
-                // Load WASM and initialize dictionary in parallel
-                const [wasmModule] = await Promise.all([
-                    init(),
-                    loadAndInitializeDictionary()
-                ]);
+                // First, initialize WASM module
+                wasm = await init();
+                console.log('WASM module loaded');
 
-                wasm = wasmModule;
-                console.log('WASM module loaded and dictionary initialized');
+                // Then load and initialize dictionary (requires WASM to be ready)
+                await loadAndInitializeDictionary();
+                console.log('Dictionary initialized');
 
                 // Enable the solve button once everything is loaded
                 document.getElementById('solveBtn').disabled = false;
