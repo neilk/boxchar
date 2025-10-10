@@ -1,48 +1,23 @@
 <script>
-  import { puzzleSides } from '../stores/puzzle.js';
-
-  let fields = [];
-
-  // Initialize fields as individual characters from the sides
-  $: {
-    fields = [];
-    for (let i = 0; i < 4; i++) {
-      const side = $puzzleSides[i] || '';
-      for (let j = 0; j < 3; j++) {
-        fields.push(side[j] || '');
-      }
-    }
-  }
-
-  // Map field indices to their side index
-  const FIELD_TO_SIDE = [
-    0, 0, 0,  // fields 0-2: side 0 (top)
-    1, 1, 1,  // fields 3-5: side 1 (right)
-    2, 2, 2,  // fields 6-8: side 2 (left)
-    3, 3, 3   // fields 9-11: side 3 (bottom)
-  ];
-
-  function updateSides() {
-    const newSides = ['', '', '', ''];
-    fields.forEach((char, index) => {
-      const sideIndex = FIELD_TO_SIDE[index];
-      newSides[sideIndex] += char.toUpperCase();
-    });
-    puzzleSides.set(newSides);
-  }
+  import { puzzleFields } from '../stores/puzzle.js';
 
   function handleInput(index, event) {
     const value = event.target.value.toUpperCase();
 
     // Only allow single uppercase letter
     if (value.length > 0) {
-      fields[index] = value[value.length - 1].replace(/[^A-Z]/g, '');
-      event.target.value = fields[index];
+      const letter = value[value.length - 1].replace(/[^A-Z]/g, '');
+      event.target.value = letter;
 
-      updateSides();
+      // Update the store
+      puzzleFields.update(fields => {
+        const newFields = [...fields];
+        newFields[index] = letter;
+        return newFields;
+      });
 
       // Auto-advance to next field
-      if (fields[index] && index < 11) {
+      if (letter && index < 11) {
         const nextField = document.getElementById(`char${String(index + 1).padStart(2, '0')}`);
         if (nextField) {
           nextField.focus();
@@ -50,9 +25,12 @@
         }
       }
     } else {
-      fields[index] = '';
       event.target.value = '';
-      updateSides();
+      puzzleFields.update(fields => {
+        const newFields = [...fields];
+        newFields[index] = '';
+        return newFields;
+      });
     }
   }
 
@@ -76,19 +54,19 @@
 <div class="letter-box-container">
   <!-- Top side: char00, char01, char02 (left to right) -->
   <input type="text" id="char00" class="letter-field" maxlength="1"
-    value={fields[0]}
+    value={$puzzleFields[0]}
     on:input={(e) => handleInput(0, e)}
     on:keydown={(e) => handleKeydown(0, e)}
     on:click={handleClick}
     on:focus={handleClick}>
   <input type="text" id="char01" class="letter-field" maxlength="1"
-    value={fields[1]}
+    value={$puzzleFields[1]}
     on:input={(e) => handleInput(1, e)}
     on:keydown={(e) => handleKeydown(1, e)}
     on:click={handleClick}
     on:focus={handleClick}>
   <input type="text" id="char02" class="letter-field" maxlength="1"
-    value={fields[2]}
+    value={$puzzleFields[2]}
     on:input={(e) => handleInput(2, e)}
     on:keydown={(e) => handleKeydown(2, e)}
     on:click={handleClick}
@@ -96,19 +74,19 @@
 
   <!-- Right side: char03, char04, char05 (top to bottom) -->
   <input type="text" id="char03" class="letter-field" maxlength="1"
-    value={fields[3]}
+    value={$puzzleFields[3]}
     on:input={(e) => handleInput(3, e)}
     on:keydown={(e) => handleKeydown(3, e)}
     on:click={handleClick}
     on:focus={handleClick}>
   <input type="text" id="char04" class="letter-field" maxlength="1"
-    value={fields[4]}
+    value={$puzzleFields[4]}
     on:input={(e) => handleInput(4, e)}
     on:keydown={(e) => handleKeydown(4, e)}
     on:click={handleClick}
     on:focus={handleClick}>
   <input type="text" id="char05" class="letter-field" maxlength="1"
-    value={fields[5]}
+    value={$puzzleFields[5]}
     on:input={(e) => handleInput(5, e)}
     on:keydown={(e) => handleKeydown(5, e)}
     on:click={handleClick}
@@ -116,19 +94,19 @@
 
   <!-- Left side: char06, char07, char08 (top to bottom) -->
   <input type="text" id="char06" class="letter-field" maxlength="1"
-    value={fields[6]}
+    value={$puzzleFields[6]}
     on:input={(e) => handleInput(6, e)}
     on:keydown={(e) => handleKeydown(6, e)}
     on:click={handleClick}
     on:focus={handleClick}>
   <input type="text" id="char07" class="letter-field" maxlength="1"
-    value={fields[7]}
+    value={$puzzleFields[7]}
     on:input={(e) => handleInput(7, e)}
     on:keydown={(e) => handleKeydown(7, e)}
     on:click={handleClick}
     on:focus={handleClick}>
   <input type="text" id="char08" class="letter-field" maxlength="1"
-    value={fields[8]}
+    value={$puzzleFields[8]}
     on:input={(e) => handleInput(8, e)}
     on:keydown={(e) => handleKeydown(8, e)}
     on:click={handleClick}
@@ -136,19 +114,19 @@
 
   <!-- Bottom side: char09, char10, char11 (left to right) -->
   <input type="text" id="char09" class="letter-field" maxlength="1"
-    value={fields[9]}
+    value={$puzzleFields[9]}
     on:input={(e) => handleInput(9, e)}
     on:keydown={(e) => handleKeydown(9, e)}
     on:click={handleClick}
     on:focus={handleClick}>
   <input type="text" id="char10" class="letter-field" maxlength="1"
-    value={fields[10]}
+    value={$puzzleFields[10]}
     on:input={(e) => handleInput(10, e)}
     on:keydown={(e) => handleKeydown(10, e)}
     on:click={handleClick}
     on:focus={handleClick}>
   <input type="text" id="char11" class="letter-field" maxlength="1"
-    value={fields[11]}
+    value={$puzzleFields[11]}
     on:input={(e) => handleInput(11, e)}
     on:keydown={(e) => handleKeydown(11, e)}
     on:click={handleClick}

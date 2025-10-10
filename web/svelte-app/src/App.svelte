@@ -4,7 +4,7 @@
   import LetterBox from './lib/LetterBox.svelte';
   import SolutionsDisplay from './lib/SolutionsDisplay.svelte';
   import {
-    puzzleSides,
+    puzzleFields,
     solutions,
     isPuzzleComplete,
     solveTime,
@@ -48,7 +48,13 @@
     setTimeout(() => {
       try {
         const startTime = performance.now();
-        const sides = $puzzleSides.map(s => s.toLowerCase());
+        // Convert fields to sides format for WASM
+        const sides = [
+          $puzzleFields.slice(0, 3).join(''),   // top
+          $puzzleFields.slice(3, 6).join(''),   // right
+          $puzzleFields.slice(6, 9).join(''),   // left
+          $puzzleFields.slice(9, 12).join('')   // bottom
+        ].map(s => s.toLowerCase());
         const maxSolutions = 10000;
 
         const result = solveFunction(sides, maxSolutions);

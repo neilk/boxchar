@@ -1,15 +1,15 @@
 <script>
-  import { puzzleSides } from '../stores/puzzle.js';
+  import { puzzleFields } from '../stores/puzzle.js';
 
   let loading = false;
 
   const examplePuzzles = [
-    { label: 'JGH / NVY / EID / ORP', value: 'JGH,NVY,EID,ORP' },
-    { label: 'YFA / OTK / LGW / RNI', value: 'YFA,OTK,LGW,RNI' },
-    { label: 'LHM / CIB / ANK / OUP', value: 'LHM,CIB,ANK,OUP' },
-    { label: 'GIY / ERC / XHA / LOP', value: 'GIY,ERC,XHA,LOP' },
-    { label: 'PRC / YAN / LKH / SIO', value: 'PRC,YAN,LKH,SIO' },
-    { label: 'VYQ / FIG / OTE / XLU', value: 'VYQ,FIG,OTE,XLU' }
+    { label: 'JGH NVY EID ORP', value: 'JGHNVYEIDORP' },
+    { label: 'YFA OTK LGW RNI', value: 'YFAOTKLGWRNI' },
+    { label: 'LHM CIB ANK OUP', value: 'LHMCIBANKOUP' },
+    { label: 'GIY ERC XHA LOP', value: 'GIYERCXHALOP' },
+    { label: 'PRC YAN LKH SIO', value: 'PRCYANLKHSIO' },
+    { label: 'VYQ FIG OTE XLU', value: 'VYQFIGOTEXLU' }
   ];
 
   async function loadTodaysPuzzle() {
@@ -37,7 +37,9 @@
       }
 
       const sidesData = JSON.parse(match[1]);
-      puzzleSides.set(sidesData);
+      // Convert sides array to fields array
+      const fields = sidesData.flatMap(side => side.split(''));
+      puzzleFields.set(fields);
     } catch (error) {
       alert('Failed to load today\'s puzzle: ' + error.message);
     } finally {
@@ -49,8 +51,9 @@
     const value = event.target.value;
     if (!value) return;
 
-    const sides = value.split(',');
-    puzzleSides.set(sides);
+    // Convert string of 12 letters to array
+    const fields = value.split('');
+    puzzleFields.set(fields);
 
     // Reset dropdown
     setTimeout(() => {
