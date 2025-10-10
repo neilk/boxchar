@@ -171,11 +171,52 @@
         }
 
         .side-input select {
-            padding: 10px; 
-            border: 2px solid #ddd; 
-            border-radius: 4px; 
-            font-size: 16px; 
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
             margin-bottom: 10px;
+        }
+
+        .solution-segment {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            border: 2px solid #007bff;
+        }
+
+        .segment-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .segment-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .segment-count {
+            font-size: 16px;
+            color: #666;
+            background: #f0f0f0;
+            padding: 5px 12px;
+            border-radius: 12px;
+        }
+
+        .load-more-btn {
+            background: #6c757d;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        .load-more-btn:hover {
+            background: #5a6268;
         }
     </style>
 </head>
@@ -517,37 +558,124 @@
             }, 10); // Small delay to allow UI update
         }
         
+        // Store solutions data for load more functionality
+        const solutionData = {
+            byWordCount: {},
+            visibleCounts: {}
+        };
+
         function displaySolutions(solutions, elapsedMs = null) {
             const solutionsList = document.getElementById('solutionsList');
-            
+
             if (solutions.length === 0) {
                 solutionsList.innerHTML = '<div class="error">No solutions found. Try a different puzzle or check your input.</div>';
                 return;
             }
-            
+
             // Check if first solution is an error message
             if (solutions[0].startsWith('Error:')) {
                 solutionsList.innerHTML = `<div class="error">${solutions[0]}</div>`;
                 return;
             }
-            
+
+            // Segment solutions by word count
+            solutionData.byWordCount = {};
+            solutions.forEach(solution => {
+                const wordCount = solution.split('-').length;
+                if (!solutionData.byWordCount[wordCount]) {
+                    solutionData.byWordCount[wordCount] = [];
+                }
+                solutionData.byWordCount[wordCount].push(solution);
+            });
+
+            // Initialize visible counts (show top 3 for each segment)
+            solutionData.visibleCounts = {};
+            Object.keys(solutionData.byWordCount).forEach(wordCount => {
+                solutionData.visibleCounts[wordCount] = 3;
+            });
+
             let html = `<p>Found ${solutions.length} solution${solutions.length === 1 ? '' : 's'}`;
             if (elapsedMs !== null) {
                 html += ` in <span class="timing">${elapsedMs}ms</span>`;
             }
             html += `:</p>`;
-            
-            solutions.forEach((solution, index) => {
-                const wordCount = solution.split('-').length;
+
+            // Sort word counts (2, 3, 4, etc.)
+            const wordCounts = Object.keys(solutionData.byWordCount).map(Number).sort((a, b) => a - b);
+
+            wordCounts.forEach(wordCount => {
+                const segmentSolutions = solutionData.byWordCount[wordCount];
+                const total = segmentSolutions.length;
+
+                html += `
+                    <div class="solution-segment">
+                        <div class="segment-header">
+                            <div class="segment-title">${wordCount}-Word Solution${wordCount === 1 ? '' : 's'}</div>
+                            <div class="segment-count">${total} total</div>
+                        </div>
+                        <div id="segment-${wordCount}">
+                `;
+
+                // Show only top 3 initially
+                const visible = Math.min(3, total);
+                for (let i = 0; i < visible; i++) {
+                    const solution = segmentSolutions[i];
+                    html += `
+                        <div class="solution">
+                            <div class="solution-words">${solution}</div>
+                        </div>
+                    `;
+                }
+
+                html += `</div>`;
+
+                // Add "load more" button if there are more than 3 solutions
+                if (total > 3) {
+                    html += `
+                        <button class="load-more-btn" onclick="loadMoreSolutions(${wordCount})">
+                            Load 10 More (${total - visible} remaining)
+                        </button>
+                    `;
+                }
+
+                html += `</div>`;
+            });
+
+            solutionsList.innerHTML = html;
+        }
+
+        window.loadMoreSolutions = function(wordCount) {
+            const segmentSolutions = solutionData.byWordCount[wordCount];
+            const currentVisible = solutionData.visibleCounts[wordCount];
+            const newVisible = Math.min(currentVisible + 10, segmentSolutions.length);
+
+            solutionData.visibleCounts[wordCount] = newVisible;
+
+            // Re-render this segment
+            const segmentDiv = document.getElementById(`segment-${wordCount}`);
+            let html = '';
+
+            for (let i = 0; i < newVisible; i++) {
+                const solution = segmentSolutions[i];
                 html += `
                     <div class="solution">
                         <div class="solution-words">${solution}</div>
-                        <div class="solution-score">${wordCount} word${wordCount === 1 ? '' : 's'}</div>
                     </div>
                 `;
-            });
-            
-            solutionsList.innerHTML = html;
+            }
+
+            segmentDiv.innerHTML = html;
+
+            // Update or remove the button
+            const segment = segmentDiv.parentElement;
+            let button = segment.querySelector('.load-more-btn');
+
+            if (newVisible < segmentSolutions.length) {
+                const remaining = segmentSolutions.length - newVisible;
+                button.textContent = `Load 10 More (${remaining} remaining)`;
+            } else {
+                button.remove();
+            }
         }
         
         function showError(message) {
