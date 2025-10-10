@@ -7,9 +7,11 @@ A web interface for the Letter Boxed puzzle solver, built with Svelte and Vite, 
 ### Prerequisites
 
 - Node.js (v16+)
-- The WASM package must be built first from the parent directory: `cd ../.. && ./build-web.sh`
+- The WASM package must be built first from the repository root: `../../build-web.sh`
 
 ### Installation
+
+**Important: All npm commands must be run from the `web/svelte-app/` directory.**
 
 ```bash
 npm install
@@ -19,9 +21,15 @@ npm install
 
 ### Development Mode
 
-Run the Vite dev server with Hot Module Replacement (HMR):
+Run the Vite dev server with Hot Module Replacement (HMR).
+
+**Make sure you are in the `web/svelte-app/` directory:**
 
 ```bash
+# From repository root:
+cd web/svelte-app
+
+# Then run:
 npm run dev
 ```
 
@@ -32,9 +40,15 @@ npm run dev
 
 ### Production Build
 
-Build optimized static files for deployment:
+Build optimized static files for deployment.
+
+**Make sure you are in the `web/svelte-app/` directory:**
 
 ```bash
+# From repository root:
+cd web/svelte-app
+
+# Then run:
 npm run build
 ```
 
@@ -45,9 +59,15 @@ npm run build
 
 ### Preview Production Build
 
-Test the production build locally:
+Test the production build locally (must run `npm run build` first).
+
+**Make sure you are in the `web/svelte-app/` directory:**
 
 ```bash
+# From repository root:
+cd web/svelte-app
+
+# Then run:
 npm run preview
 ```
 

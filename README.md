@@ -96,22 +96,29 @@ The web application is built with Svelte and powered by Rust/WASM.
 
 ### Building the WASM Package
 
-First, build the WASM package from the Rust code:
+First, build the WASM package from the Rust code (run from repository root):
 
 ```bash
-$ ./build-web.sh
+./build-web.sh
 ```
 
-This creates the WASM files in `web/pkg/` and copies necessary files to the web directory.
+This creates the WASM files in `web/svelte-app/src/pkg/` and copies the dictionary to `web/svelte-app/public/`.
 
 ### Development Mode
 
-Run the Svelte development server with hot module replacement:
+Run the Svelte development server with hot module replacement.
 
+**From repository root:**
 ```bash
-$ cd web/svelte-app
-$ npm install  # First time only
-$ npm run dev
+cd web/svelte-app
+npm install  # First time only
+npm run dev
+```
+
+**Or from `web/svelte-app/` directory:**
+```bash
+npm install  # First time only
+npm run dev
 ```
 
 Opens at http://localhost:5173/
@@ -121,24 +128,36 @@ Opens at http://localhost:5173/
 
 ### Production Build
 
-Build optimized static files for deployment:
+Build optimized static files for deployment.
 
+**From repository root:**
 ```bash
-$ cd web/svelte-app
-$ npm run build
+cd web/svelte-app
+npm run build
 ```
 
-- Outputs to `dist/` directory
+**Or from `web/svelte-app/` directory:**
+```bash
+npm run build
+```
+
+- Outputs to `web/svelte-app/dist/` directory
 - Total bundle: ~50 KB (gzipped) + 2.2 MB dictionary + 79 KB WASM
 - Can be deployed to any static hosting (GitHub Pages, Netlify, Vercel, etc.)
 
 ### Preview Production Build
 
-Test the production build locally:
+Test the production build locally (must be run after `npm run build`).
 
+**From repository root:**
 ```bash
-$ cd web/svelte-app
-$ npm run preview
+cd web/svelte-app
+npm run preview
+```
+
+**Or from `web/svelte-app/` directory:**
+```bash
+npm run preview
 ```
 
 Opens at http://localhost:4173/
