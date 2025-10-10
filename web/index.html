@@ -159,10 +159,78 @@
             border-radius: 4px;
             margin: 20px 0;
         }
-        
+
         .example h3 {
             margin-top: 0;
             color: #0066cc;
+        }
+
+        .puzzle-loader {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: 20px 0;
+        }
+
+        .puzzle-loader-label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .pill-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+            white-space: nowrap;
+        }
+
+        .pill-button:hover:not(:disabled) {
+            background: #0056b3;
+        }
+
+        .pill-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .pill-select-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .pill-select {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 35px 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            transition: background 0.2s;
+        }
+
+        .pill-select:hover {
+            background: #0056b3;
+        }
+
+        .pill-select-wrapper::after {
+            content: '▼';
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: white;
+            font-size: 10px;
         }
         
         .timing {
@@ -226,25 +294,26 @@
     
     <section id="main">
         <div class="example">
-            <button id="loadTodayBtn" onclick="loadTodaysPuzzle()" style="width: 100%; margin-top: 10px;">
-                Load Today's NYT Puzzle
-            </button>
-            <div class="side-input">
-                <label for="examplePuzzle">Or try one of these example puzzles:</label>
-                <select id="examplePuzzle" onchange="loadExample()">
-                    <option value="">-- Select a puzzle --</option>
-                    <option value="JGH,NVY,EID,ORP">JGH / NVY / EID / ORP</option>
-                    <option value="YFA,OTK,LGW,RNI">YFA / OTK / LGW / RNI</option>
-                    <option value="LHM,CIB,ANK,OUP">LHM / CIB / ANK / OUP</option>
-                    <option value="GIY,ERC,XHA,LOP">GIY / ERC / XHA / LOP</option>
-                    <option value="PRC,YAN,LKH,SIO">PRC / YAN / LKH / SIO</option>
-                    <option value="VYQ,FIG,OTE,XLU">VYQ / FIG / OTE / XLU</option>
-                </select>
+            <div class="puzzle-loader">
+                <span class="puzzle-loader-label">Get a puzzle:</span>
+                <button id="loadTodayBtn" class="pill-button" onclick="loadTodaysPuzzle()">
+                    NYT
+                </button>
+                <div class="pill-select-wrapper">
+                    <select id="examplePuzzle" class="pill-select" onchange="loadExample()">
+                        <option value="">Sample</option>
+                        <option value="JGH,NVY,EID,ORP">JGH / NVY / EID / ORP</option>
+                        <option value="YFA,OTK,LGW,RNI">YFA / OTK / LGW / RNI</option>
+                        <option value="LHM,CIB,ANK,OUP">LHM / CIB / ANK / OUP</option>
+                        <option value="GIY,ERC,XHA,LOP">GIY / ERC / XHA / LOP</option>
+                        <option value="PRC,YAN,LKH,SIO">PRC / YAN / LKH / SIO</option>
+                        <option value="VYQ,FIG,OTE,XLU">VYQ / FIG / OTE / XLU</option>
+                    </select>
+                </div>
             </div>
         </div>
 
         <div class="container">
-            <h2>Enter Puzzle</h2>
             <div class="game-input">
                 <div class="letter-box-container">
                     <!-- Top side: char00, char01, char02 (left to right) -->
@@ -393,8 +462,6 @@
                         }
                     }
 
-                    // Reset example puzzle dropdown when user edits
-                    document.getElementById('examplePuzzle').value = '';
                     savePuzzleToStorage();
                 });
 
@@ -432,6 +499,11 @@
 
             const sides = puzzleValue.split(',');
             window.createBoard(sides);
+
+            // Reset dropdown to show "Sample" after loading
+            setTimeout(() => {
+                puzzleSelect.value = '';
+            }, 100);
         }
 
         window.createBoard = function(sidesData) {
@@ -483,8 +555,6 @@
 
                 const sidesData = JSON.parse(match[1]);
                 window.createBoard(sidesData);
-                // Reset example puzzle dropdown when NYT puzzle is loaded
-                document.getElementById('examplePuzzle').value = '';
             } catch (error) {
                 alert('Failed to load today\'s puzzle: ' + error.message);
             } finally {
