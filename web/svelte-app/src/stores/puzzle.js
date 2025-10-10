@@ -18,6 +18,9 @@ export const isPuzzleComplete = derived(
   $fields => $fields.every(field => field.length === 1 && /^[A-Z]$/.test(field))
 );
 
+// Flag to control auto-saving
+let autoSaveEnabled = false;
+
 // Load puzzle from localStorage
 export function loadPuzzleFromStorage() {
   try {
@@ -30,6 +33,9 @@ export function loadPuzzleFromStorage() {
     }
   } catch (error) {
     console.warn('Failed to load saved puzzle:', error);
+  } finally {
+    // Enable auto-save after loading is complete
+    autoSaveEnabled = true;
   }
 }
 
@@ -42,7 +48,9 @@ export function savePuzzleToStorage(fields) {
   }
 }
 
-// Subscribe to save changes automatically
+// Subscribe to save changes automatically (only after initial load)
 puzzleFields.subscribe(fields => {
-  savePuzzleToStorage(fields);
+  if (autoSaveEnabled) {
+    savePuzzleToStorage(fields);
+  }
 });
