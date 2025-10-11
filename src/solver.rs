@@ -88,7 +88,7 @@ impl fmt::Display for Solution {
             .map(|w| w.word.as_str())
             .collect::<Vec<&str>>()
             .join("-");
-        write!(f, "{}", s)
+        write!(f, "{}:{}", s, self.score)
     }
 }
 
@@ -326,8 +326,11 @@ impl Solver {
                 solution_batch.push(solution);
                 *total_count += 1;
 
+                // Adaptive batch size: small for first batch (quick feedback), larger after
+                let batch_threshold = if *total_count <= 10 { 10 } else { 100 };
+
                 // When batch is full, send it and check for cancellation
-                if solution_batch.len() >= 100 {
+                if solution_batch.len() >= batch_threshold {
                     if !on_batch(solution_batch) {
                         return false; // Cancelled
                     }
@@ -400,9 +403,15 @@ mod tests {
             dictionary.words[2].clone(),
             dictionary.words[1].clone(),
         ]);
-        assert_eq!(solution.to_string(), "word-dojo-ocean");
+        // Solution display now includes score after a colon
+        let display_str = solution.to_string();
+        assert!(display_str.starts_with("word-dojo-ocean:"));
+        assert!(display_str.contains(':'));
+
         let single_word = Solution::new(vec![dictionary.words[0].clone()]);
-        assert_eq!(single_word.to_string(), "word");
+        let single_display = single_word.to_string();
+        assert!(single_display.starts_with("word:"));
+        assert!(single_display.contains(':'));
     }
 
     #[test]

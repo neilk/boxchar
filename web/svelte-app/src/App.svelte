@@ -52,32 +52,11 @@
 
   // Subscribe to puzzle changes for auto-solve
   puzzleFields.subscribe(debouncedAutoSolve);
-
-  function solvePuzzle() {
-    if (!$solverReady) {
-      alert('Solver not ready yet. Please wait and try again.');
-      return;
-    }
-
-    if (!$isPuzzleComplete) {
-      alert('Please fill in all four sides of the puzzle.');
-      return;
-    }
-
-    const sides = [
-      $puzzleFields.slice(0, 3).join(''),
-      $puzzleFields.slice(3, 6).join(''),
-      $puzzleFields.slice(9, 12).join(''),
-      $puzzleFields.slice(6, 9).join('')
-    ].map(s => s.toLowerCase());
-
-    workerSolvePuzzle(sides);
-  }
 </script>
 
 <main>
   <h1>Letter Boxed Solver</h1>
-  <p>Enter the letters for each side of the Letter Boxed puzzle. The solver will find word combinations that use all letters.</p>
+  <p>Enter the letters for each side of the Letter Boxed puzzle. Solutions will appear automatically as you type.</p>
 
   {#if initError}
     <div class="error">Failed to initialize solver: {initError}</div>
@@ -92,18 +71,8 @@
       <LetterBox />
     </div>
 
-    <button
-      class="solve-btn"
-      on:click={solvePuzzle}
-      disabled={$solving || !$solverReady}
-    >
-      {$solving ? 'Solving...' : !$solverReady ? 'Loading...' : 'Solve Puzzle'}
-    </button>
-
-    {#if $solveStats.duration !== null}
-      <div class="stats">
-        Found {$solveStats.totalReceived} solutions in {$solveStats.duration}ms
-      </div>
+    {#if !$solverReady}
+      <div class="status-message loading">Loading solver...</div>
     {/if}
   </div>
 
@@ -150,25 +119,19 @@
     margin: 20px 0;
   }
 
-  .solve-btn {
-    background: var(--color-primary);
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 4px;
-    font-size: 16px;
-    cursor: pointer;
-    margin: 10px 0;
-    width: 100%;
+  .status-message {
+    text-align: center;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 15px;
+    margin: 15px 0;
+    font-weight: 500;
+    transition: all 0.3s ease;
   }
 
-  .solve-btn:hover:not(:disabled) {
-    background: var(--color-primary-hover);
-  }
-
-  .solve-btn:disabled {
-    background: var(--color-disabled);
-    cursor: not-allowed;
+  .status-message.loading {
+    background: var(--color-bg-light);
+    color: var(--color-text-muted);
   }
 
   .error {
@@ -177,12 +140,5 @@
     padding: 10px;
     border-radius: 4px;
     margin: 10px 0;
-  }
-
-  .stats {
-    text-align: center;
-    margin-top: 10px;
-    color: var(--color-text-muted);
-    font-size: 14px;
   }
 </style>

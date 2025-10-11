@@ -24,8 +24,9 @@ fn test_solver_basic() {
 
     assert!(!solutions.is_empty());
     assert!(solutions.len() == 2);
-    assert!(solutions.iter().any(|s| s.to_string() == "forklift-twangy"));
+    // Solutions now include scores in format "words:score"
+    assert!(solutions.iter().any(|s| s.to_string().starts_with("forklift-twangy:")));
     assert!(solutions
         .iter()
-        .any(|s| s.to_string() == "filtration-nag-gawkily"));
+        .any(|s| s.to_string().starts_with("filtration-nag-gawkily:")));
 }

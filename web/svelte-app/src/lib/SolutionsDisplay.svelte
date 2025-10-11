@@ -1,89 +1,157 @@
 <script>
   import { solutions, solveStats } from '../stores/solver-worker.js';
 
-  let visibleCounts = {};
   let solutionsByWordCount = {};
+  let expanded = false;
+  let modalSegment = null; // null or wordCount to show in modal
+  let modalSortOrder = 'best'; // 'best' or 'alphabetical'
+
+  // Parse solution string to extract words and score
+  function parseSolution(solutionStr) {
+    const parts = solutionStr.split(':');
+    const words = parts[0];
+    const score = parts[1] || '';
+    return { words, score };
+  }
 
   $: {
     // Segment solutions by word count
     solutionsByWordCount = {};
     $solutions.forEach(solution => {
-      const wordCount = solution.split('-').length;
+      const { words } = parseSolution(solution);
+      const wordCount = words.split('-').length;
       if (!solutionsByWordCount[wordCount]) {
         solutionsByWordCount[wordCount] = [];
       }
       solutionsByWordCount[wordCount].push(solution);
     });
-
-    // Initialize visible counts (show top 3 for each segment)
-    visibleCounts = {};
-    Object.keys(solutionsByWordCount).forEach(wordCount => {
-      visibleCounts[wordCount] = 3;
-    });
   }
 
-  function loadMoreSolutions(wordCount) {
-    visibleCounts[wordCount] = Math.min(
-      visibleCounts[wordCount] + 10,
-      solutionsByWordCount[wordCount].length
-    );
+  // Get sorted solutions for modal based on current sort order
+  $: modalSolutions = modalSegment !== null && solutionsByWordCount[modalSegment]
+    ? getSortedSolutions(solutionsByWordCount[modalSegment], modalSortOrder)
+    : [];
+
+  function getSortedSolutions(solutions, sortOrder) {
+    const sorted = [...solutions];
+    if (sortOrder === 'alphabetical') {
+      return sorted.sort((a, b) => a.localeCompare(b));
+    }
+    // 'best' keeps the original order (already sorted by score from solver)
+    return sorted;
+  }
+
+  function toggleExpanded() {
+    expanded = !expanded;
+  }
+
+  function showModal(wordCount) {
+    modalSegment = wordCount;
+    modalSortOrder = 'best'; // Reset to 'best' when opening modal
+  }
+
+  function closeModal() {
+    modalSegment = null;
+  }
+
+  // Handle escape key to close modal
+  function handleKeydown(e) {
+    if (e.key === 'Escape' && modalSegment !== null) {
+      closeModal();
+    }
   }
 </script>
 
+<svelte:window on:keydown={handleKeydown} />
+
 {#if $solutions.length > 0}
   <div class="solutions-container">
-    <h2>Solutions</h2>
-
     {#if $solutions[0].startsWith('Error:')}
       <div class="error">{$solutions[0]}</div>
     {:else}
-      <p>
-        Found {$solutions.length} solution{$solutions.length === 1 ? '' : 's'}
-        {#if $solveStats.duration !== null}
-          in <span class="timing">{$solveStats.duration}ms</span>
-        {/if}:
-      </p>
+      <button class="toggle-btn" on:click={toggleExpanded}>
+        {expanded ? 'Hide Solutions' : 'Show Solutions'}
+      </button>
 
-      {#each Object.keys(solutionsByWordCount).sort((a, b) => a - b) as wordCount}
-        {@const segmentSolutions = solutionsByWordCount[wordCount]}
-        {@const visible = visibleCounts[wordCount]}
-        {@const total = segmentSolutions.length}
-
-        <div class="solution-segment">
-          <div class="segment-header">
-            <div class="segment-title">
-              {wordCount}-Word Solution{wordCount === '1' ? '' : 's'}
-            </div>
-            <div class="segment-count">{total} total</div>
-          </div>
-
-          {#each segmentSolutions.slice(0, visible) as solution}
-            <div class="solution">
-              <div class="solution-words">{solution}</div>
+      {#if !expanded}
+        <!-- Collapsed: Simple summary -->
+        <div class="summary">
+          {#each Object.keys(solutionsByWordCount).sort((a, b) => a - b) as wordCount}
+            {@const total = solutionsByWordCount[wordCount].length}
+            <div class="summary-row">
+              <span class="summary-label">{wordCount} word{wordCount === '1' ? '' : 's'}:</span>
+              <span class="summary-count">{total}</span>
             </div>
           {/each}
-
-          {#if visible < total}
-            <button
-              class="load-more-btn"
-              on:click={() => loadMoreSolutions(wordCount)}
-            >
-              Load 10 More ({total - visible} remaining)
-            </button>
-          {/if}
         </div>
-      {/each}
+      {:else}
+        <!-- Expanded: Summary rows become headers with solutions below -->
+        <div class="expanded-view">
+          {#each Object.keys(solutionsByWordCount).sort((a, b) => a - b) as wordCount}
+            {@const segmentSolutions = solutionsByWordCount[wordCount]}
+            {@const total = segmentSolutions.length}
+            {@const showButton = total > 3}
+
+            <div class="segment">
+              <div class="segment-header">
+                <span class="segment-label">{wordCount} word{wordCount === '1' ? '' : 's'}:</span>
+                {#if showButton}
+                  <button class="show-all-btn" on:click={() => showModal(wordCount)}>
+                    Show all {total}
+                  </button>
+                {/if}
+              </div>
+
+              <div class="solutions-list">
+                {#each segmentSolutions.slice(0, 3) as solution}
+                  {@const parsed = parseSolution(solution)}
+                  <div class="solution-item">
+                    <span class="solution-words">{parsed.words}</span>
+                    <span class="solution-score">{parsed.score}</span>
+                  </div>
+                {/each}
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
     {/if}
+  </div>
+{/if}
+
+<!-- Modal -->
+{#if modalSegment !== null}
+  <div class="modal-overlay" on:click={closeModal} role="dialog" aria-modal="true">
+    <div class="modal-content" on:click|stopPropagation role="document">
+      <div class="modal-header">
+        <div class="modal-header-left">
+          <h3>{modalSegment}-word solutions ({solutionsByWordCount[modalSegment].length} total)</h3>
+          <div class="sort-control">
+            <label for="sort-select">Sort by:</label>
+            <select id="sort-select" bind:value={modalSortOrder}>
+              <option value="best">Best</option>
+              <option value="alphabetical">A-Z</option>
+            </select>
+          </div>
+        </div>
+        <button class="close-btn" on:click={closeModal}>&times;</button>
+      </div>
+      <div class="modal-body">
+        {#each modalSolutions as solution}
+          {@const parsed = parseSolution(solution)}
+          <div class="modal-solution-item">
+            <span class="solution-words">{parsed.words}</span>
+            <span class="solution-score">{parsed.score}</span>
+          </div>
+        {/each}
+      </div>
+    </div>
   </div>
 {/if}
 
 <style>
   .solutions-container {
     margin-top: 20px;
-  }
-
-  h2 {
-    margin-top: 0;
   }
 
   .error {
@@ -94,69 +162,231 @@
     margin: 10px 0;
   }
 
-  .timing {
-    color: var(--color-success);
-    font-weight: bold;
+  .toggle-btn {
+    width: 100%;
+    padding: 12px 24px;
+    background: var(--color-primary);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-bottom: 15px;
+    transition: background 0.2s ease;
   }
 
-  .solution-segment {
-    background: var(--color-bg-white);
-    padding: 20px;
-    margin: 20px 0;
-    border-radius: 8px;
-    border: 2px solid var(--color-primary);
+  .toggle-btn:hover {
+    background: var(--color-primary-hover);
+  }
+
+  .summary {
+    border: 1px solid var(--color-border-light);
+    border-radius: 6px;
+    padding: 15px;
+    background: var(--color-bg-container);
+  }
+
+  .summary-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid var(--color-border-light);
+  }
+
+  .summary-row:last-child {
+    border-bottom: none;
+  }
+
+  .summary-label {
+    font-weight: 500;
+    color: var(--color-text);
+  }
+
+  .summary-count {
+    font-weight: 600;
+    color: var(--color-primary);
+  }
+
+  .show-all-btn {
+    background: none;
+    border: 1px solid var(--color-primary);
+    color: var(--color-primary);
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .show-all-btn:hover {
+    background: var(--color-primary);
+    color: white;
+  }
+
+  .expanded-view {
+    border: 1px solid var(--color-border-light);
+    border-radius: 6px;
+    background: var(--color-bg-container);
+  }
+
+  .segment {
+    border-bottom: 1px solid var(--color-border-light);
+    padding: 12px 15px;
+  }
+
+  .segment:last-child {
+    border-bottom: none;
   }
 
   .segment-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 2px solid var(--color-border-light);
+    margin-bottom: 8px;
   }
 
-  .segment-title {
-    font-size: 20px;
-    font-weight: bold;
-    color: var(--color-primary);
+  .segment-label {
+    font-weight: 500;
+    color: var(--color-text);
   }
 
-  .segment-count {
-    font-size: 16px;
-    color: var(--color-text-muted);
+  .solutions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .solution-item {
+    padding: 6px 12px;
     background: var(--color-bg-light);
-    padding: 5px 12px;
-    border-radius: 12px;
-  }
-
-  .solution {
-    background: var(--color-bg-white);
-    padding: 15px;
-    margin: 10px 0;
-    border-radius: 4px;
-    border-left: 4px solid var(--color-primary);
+    border-radius: 2px;
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
   }
 
   .solution-words {
-    font-size: 18px;
-    font-weight: bold;
-    color: var(--color-primary);
+    flex: 1;
   }
 
-  .load-more-btn {
-    background: var(--color-bg-secondary);
-    color: white;
-    border: none;
-    padding: 12px 24px;
-    border-radius: 4px;
-    font-size: 16px;
-    cursor: pointer;
-    margin-top: 10px;
+  .solution-score {
+    font-style: italic;
+    color: var(--color-text-muted);
+    font-size: 13px;
+  }
+
+  /* Modal styles */
+  .modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 20px;
+  }
+
+  .modal-content {
+    background: var(--color-bg-container);
+    border-radius: 8px;
+    max-width: 800px;
     width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
   }
 
-  .load-more-btn:hover {
-    background: var(--color-bg-secondary-hover);
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 20px;
+    border-bottom: 2px solid var(--color-border-light);
+  }
+
+  .modal-header-left {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .modal-header h3 {
+    margin: 0;
+    color: var(--color-primary);
+    font-size: 20px;
+  }
+
+  .sort-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .sort-control label {
+    font-size: 14px;
+    color: var(--color-text-muted);
+  }
+
+  .sort-control select {
+    padding: 4px 8px;
+    border: 1px solid var(--color-border-light);
+    border-radius: 4px;
+    background: var(--color-bg-container);
+    color: var(--color-text);
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .sort-control select:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    font-size: 32px;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+  }
+
+  .close-btn:hover {
+    background: var(--color-bg-light);
+    color: var(--color-text);
+  }
+
+  .modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+  }
+
+  .modal-solution-item {
+    padding: 8px 12px;
+    background: var(--color-bg-light);
+    border-radius: 2px;
+    font-size: 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
   }
 </style>
