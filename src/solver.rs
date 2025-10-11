@@ -88,7 +88,7 @@ impl fmt::Display for Solution {
             .map(|w| w.word.as_str())
             .collect::<Vec<&str>>()
             .join("-");
-        write!(f, "{}:{}", s, self.score)
+        write!(f, "{}", s)
     }
 }
 
@@ -403,15 +403,9 @@ mod tests {
             dictionary.words[2].clone(),
             dictionary.words[1].clone(),
         ]);
-        // Solution display now includes score after a colon
-        let display_str = solution.to_string();
-        assert!(display_str.starts_with("word-dojo-ocean:"));
-        assert!(display_str.contains(':'));
-
+        assert_eq!(solution.to_string(), "word-dojo-ocean");
         let single_word = Solution::new(vec![dictionary.words[0].clone()]);
-        let single_display = single_word.to_string();
-        assert!(single_display.starts_with("word:"));
-        assert!(single_display.contains(':'));
+        assert_eq!(single_word.to_string(), "word");
     }
 
     #[test]

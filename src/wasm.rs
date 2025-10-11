@@ -67,8 +67,8 @@ pub fn solve_game(game_sides: Vec<String>, max_solutions: u16) -> Vec<String> {
 
     console_log!("Found {} solutions", solutions.len());
 
-    // Convert solutions to strings using the Display trait
-    solutions.iter().map(|s| s.to_string()).collect()
+    // Convert solutions to strings with score appended
+    solutions.iter().map(|s| format!("{}:{}", s.to_string(), s.score)).collect()
 }
 
 #[wasm_bindgen]
@@ -115,10 +115,11 @@ pub fn solve_game_streaming(
             return false; // Stop solving
         }
 
-        // Convert batch to JS array of strings
+        // Convert batch to JS array of strings with scores
         let js_array = js_sys::Array::new();
         for solution in solution_batch {
-            js_array.push(&JsValue::from_str(&solution.to_string()));
+            let solution_str = format!("{}:{}", solution.to_string(), solution.score);
+            js_array.push(&JsValue::from_str(&solution_str));
         }
 
         // Send batch back to JavaScript
