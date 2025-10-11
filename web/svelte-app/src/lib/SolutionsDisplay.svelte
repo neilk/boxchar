@@ -1,8 +1,8 @@
 <script>
-  import { solutions, solveStats } from '../stores/solver-worker.js';
+  import { solutions, topSolutions, solving, solveStats } from '../stores/solver-worker.js';
 
   let solutionsByWordCount = {};
-  let expanded = false;
+  let expanded = false; // Don't reset this when puzzle changes
   let modalSegment = null; // null or wordCount to show in modal
   let modalSortOrder = 'best'; // 'best' or 'alphabetical'
 
@@ -14,8 +14,8 @@
     return { words, score };
   }
 
+  // For collapsed view: always use full solutions to count
   $: {
-    // Segment solutions by word count
     solutionsByWordCount = {};
     $solutions.forEach(solution => {
       const { words } = parseSolution(solution);
@@ -26,6 +26,9 @@
       solutionsByWordCount[wordCount].push(solution);
     });
   }
+
+  // For expanded view: use topSolutions during solving, full solutions when done
+  $: displaySolutions = $solving ? $topSolutions : solutionsByWordCount;
 
   // Get sorted solutions for modal based on current sort order
   $: modalSolutions = modalSegment !== null && solutionsByWordCount[modalSegment]
@@ -64,9 +67,9 @@
 
 <svelte:window on:keydown={handleKeydown} />
 
-{#if $solutions.length > 0}
-  <div class="solutions-container">
-    {#if $solutions[0].startsWith('Error:')}
+<div class="solutions-container">
+  {#if $solutions.length > 0 || expanded}
+    {#if $solutions.length > 0 && $solutions[0]?.startsWith('Error:')}
       <div class="error">{$solutions[0]}</div>
     {:else}
       <button class="toggle-btn" on:click={toggleExpanded}>
@@ -87,23 +90,27 @@
       {:else}
         <!-- Expanded: Summary rows become headers with solutions below -->
         <div class="expanded-view">
-          {#each Object.keys(solutionsByWordCount).sort((a, b) => a - b) as wordCount}
-            {@const segmentSolutions = solutionsByWordCount[wordCount]}
-            {@const total = segmentSolutions.length}
+          {#each Object.keys(displaySolutions).sort((a, b) => a - b) as wordCount}
+            {@const segmentSolutions = displaySolutions[wordCount] || []}
+            {@const total = solutionsByWordCount[wordCount]?.length || 0}
             {@const showButton = total > 3}
 
             <div class="segment">
               <div class="segment-header">
                 <span class="segment-label">{wordCount} word{wordCount === '1' ? '' : 's'}:</span>
                 {#if showButton}
-                  <button class="show-all-btn" on:click={() => showModal(wordCount)}>
+                  <button
+                    class="show-all-btn"
+                    on:click={() => showModal(wordCount)}
+                    disabled={$solving}
+                  >
                     Show all {total}
                   </button>
                 {/if}
               </div>
 
               <div class="solutions-list">
-                {#each segmentSolutions.slice(0, 3) as solution}
+                {#each ($solving ? segmentSolutions : segmentSolutions.slice(0, 3)) as solution}
                   {@const parsed = parseSolution(solution)}
                   <div class="solution-item">
                     <span class="solution-words">{parsed.words}</span>
@@ -116,8 +123,8 @@
         </div>
       {/if}
     {/if}
-  </div>
-{/if}
+  {/if}
+</div>
 
 <!-- Modal -->
 {#if modalSegment !== null}
@@ -220,9 +227,16 @@
     transition: all 0.2s ease;
   }
 
-  .show-all-btn:hover {
+  .show-all-btn:hover:not(:disabled) {
     background: var(--color-primary);
     color: white;
+  }
+
+  .show-all-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    border-color: var(--color-text-muted);
+    color: var(--color-text-muted);
   }
 
   .expanded-view {

@@ -115,7 +115,7 @@
   .game-input {
     display: flex;
     justify-content: center;
-    align-items: center;
+    align-items: flex-start;
     margin: 20px 0;
   }
 
