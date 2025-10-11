@@ -5,32 +5,56 @@
   import SolutionsDisplay from './lib/SolutionsDisplay.svelte';
   import {
     puzzleFields,
-    solutions,
     isPuzzleComplete,
-    solveTime,
-    solving,
     loadPuzzleFromStorage
   } from './stores/puzzle.js';
-  import { initializeWasm, dictionaryInitialized, initializationError } from './stores/wasm.js';
+  import {
+    initializeSolverWorker,
+    solvePuzzle as workerSolvePuzzle,
+    solverReady,
+    solving,
+    solutions,
+    solveStats
+  } from './stores/solver-worker.js';
+  import { debounce } from './utils/debounce.js';
 
-  let solveFunction = null;
   let initError = null;
 
   onMount(async () => {
     // Load saved puzzle from localStorage
     loadPuzzleFromStorage();
 
-    // Initialize WASM
+    // Initialize solver worker with dictionary
     try {
-      const { solve_game } = await initializeWasm();
-      solveFunction = solve_game;
+      const response = await fetch('/dictionary.txt');
+      const dictionaryText = await response.text();
+      const dictionaryData = new TextEncoder().encode(dictionaryText);
+      initializeSolverWorker(dictionaryData);
     } catch (error) {
       initError = error.message;
+      console.error('Failed to initialize solver worker:', error);
     }
   });
 
-  async function solvePuzzle() {
-    if (!solveFunction || !$dictionaryInitialized) {
+  // Auto-solve with debounce when puzzle changes
+  const debouncedAutoSolve = debounce((fields) => {
+    if (fields.every(f => f.length === 1 && /^[A-Z]$/.test(f))) {
+      const sides = [
+        fields.slice(0, 3).join(''),   // top
+        fields.slice(3, 6).join(''),   // right
+        fields.slice(9, 12).join(''),  // bottom
+        fields.slice(6, 9).join('')    // left
+      ].map(s => s.toLowerCase());
+
+      workerSolvePuzzle(sides);
+    }
+  }, 300);
+
+  // Subscribe to puzzle changes for auto-solve
+  puzzleFields.subscribe(debouncedAutoSolve);
+
+  function solvePuzzle() {
+    if (!$solverReady) {
       alert('Solver not ready yet. Please wait and try again.');
       return;
     }
@@ -40,35 +64,14 @@
       return;
     }
 
-    solving.set(true);
-    solutions.set([]);
-    solveTime.set(null);
+    const sides = [
+      $puzzleFields.slice(0, 3).join(''),
+      $puzzleFields.slice(3, 6).join(''),
+      $puzzleFields.slice(9, 12).join(''),
+      $puzzleFields.slice(6, 9).join('')
+    ].map(s => s.toLowerCase());
 
-    // Use setTimeout to allow UI to update
-    setTimeout(() => {
-      try {
-        const startTime = performance.now();
-        // Convert fields to sides format for WASM (top, right, bottom, left - clockwise)
-        const sides = [
-          $puzzleFields.slice(0, 3).join(''),   // top
-          $puzzleFields.slice(3, 6).join(''),   // right
-          $puzzleFields.slice(9, 12).join(''),  // bottom
-          $puzzleFields.slice(6, 9).join('')    // left
-        ].map(s => s.toLowerCase());
-        const maxSolutions = 10000;
-
-        console.dir({sides, solveFunction});
-        const result = solveFunction(sides, maxSolutions);
-        const endTime = performance.now();
-
-        solutions.set(result);
-        solveTime.set(Math.round(endTime - startTime));
-      } catch (error) {
-        solutions.set([`Error: ${error.message}`]);
-      } finally {
-        solving.set(false);
-      }
-    }, 10);
+    workerSolvePuzzle(sides);
   }
 </script>
 
@@ -92,10 +95,16 @@
     <button
       class="solve-btn"
       on:click={solvePuzzle}
-      disabled={$solving || !$dictionaryInitialized}
+      disabled={$solving || !$solverReady}
     >
-      {$solving ? 'Solving...' : !$dictionaryInitialized ? 'Loading...' : 'Solve Puzzle'}
+      {$solving ? 'Solving...' : !$solverReady ? 'Loading...' : 'Solve Puzzle'}
     </button>
+
+    {#if $solveStats.duration !== null}
+      <div class="stats">
+        Found {$solveStats.totalReceived} solutions in {$solveStats.duration}ms
+      </div>
+    {/if}
   </div>
 
   <div class="container">
@@ -168,5 +177,12 @@
     padding: 10px;
     border-radius: 4px;
     margin: 10px 0;
+  }
+
+  .stats {
+    text-align: center;
+    margin-top: 10px;
+    color: var(--color-text-muted);
+    font-size: 14px;
   }
 </style>

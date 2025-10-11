@@ -1,5 +1,5 @@
 <script>
-  import { solutions, solveTime } from '../stores/puzzle.js';
+  import { solutions, solveStats } from '../stores/solver-worker.js';
 
   let visibleCounts = {};
   let solutionsByWordCount = {};
@@ -39,8 +39,8 @@
     {:else}
       <p>
         Found {$solutions.length} solution{$solutions.length === 1 ? '' : 's'}
-        {#if $solveTime !== null}
-          in <span class="timing">{$solveTime}ms</span>
+        {#if $solveStats.duration !== null}
+          in <span class="timing">{$solveStats.duration}ms</span>
         {/if}:
       </p>
 
