@@ -1,6 +1,10 @@
 import init, { initialize_dictionary, solve_game_streaming, cancel_current_solve } from '../pkg/boxchar.js';
 
-let wasmReady = false;
+let wasmReadyResolve = () => { };
+let wasmReady = new Promise((resolve) => {
+  // This promise stays pending until INIT completes
+  wasmReadyResolve = resolve;
+});
 let currentSolveId = null;
 
 self.addEventListener('message', async (e) => {
@@ -8,9 +12,12 @@ self.addEventListener('message', async (e) => {
 
   if (type === 'INIT') {
     try {
+      console.log("started initalizing!")
       await init();
       await initialize_dictionary(payload.dictionaryData);
-      wasmReady = true;
+      // await delay(10000);
+      wasmReadyResolve(); // Resolve the pending promise
+      console.log("finished init");
       self.postMessage({ type: 'READY' });
     } catch (error) {
       self.postMessage({ type: 'ERROR', error: error.message });
@@ -18,15 +25,18 @@ self.addEventListener('message', async (e) => {
   }
 
   if (type === 'CANCEL') {
+    await wasmReady;
     cancel_current_solve();
     currentSolveId = null;
   }
 
+
   if (type === 'SOLVE') {
-    if (!wasmReady) {
-      self.postMessage({ type: 'ERROR', error: 'WASM not ready' });
-      return;
-    }
+    // Wait for WASM to be ready
+    console.log("asked to solve");
+    await wasmReady;
+    console.log("wasm is now ready, let's solve");
+
 
     // Cancel any previous solve
     if (currentSolveId !== null) {
