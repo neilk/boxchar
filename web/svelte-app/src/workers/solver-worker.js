@@ -12,12 +12,9 @@ self.addEventListener('message', async (e) => {
 
   if (type === 'INIT') {
     try {
-      console.log("started initalizing!")
       await init();
       await initialize_dictionary(payload.dictionaryData);
-      // await delay(10000);
       wasmReadyResolve(); // Resolve the pending promise
-      console.log("finished init");
       self.postMessage({ type: 'READY' });
     } catch (error) {
       self.postMessage({ type: 'ERROR', error: error.message });
@@ -33,10 +30,7 @@ self.addEventListener('message', async (e) => {
 
   if (type === 'SOLVE') {
     // Wait for WASM to be ready
-    console.log("asked to solve");
     await wasmReady;
-    console.log("wasm is now ready, let's solve");
-
 
     // Cancel any previous solve
     if (currentSolveId !== null) {
@@ -66,25 +60,33 @@ self.addEventListener('message', async (e) => {
       }
     };
 
-    const startTime = performance.now();
-    const totalCount = solve_game_streaming(sides, maxSolutions, onBatch);
-    const duration = Math.round(performance.now() - startTime);
+    try {
+      const startTime = performance.now();
+      const totalCount = solve_game_streaming(sides, maxSolutions, onBatch);
+      const duration = Math.round(performance.now() - startTime);
 
-    // Only send complete message if this solve wasn't cancelled
-    if (currentSolveId === solveId) {
+      // Only send complete message if this solve wasn't cancelled
+      if (currentSolveId === solveId) {
+        self.postMessage({
+          type: 'COMPLETE',
+          solveId,
+          totalCount,
+          duration
+        });
+        currentSolveId = null;
+      } else {
+        self.postMessage({
+          type: 'CANCELLED',
+          solveId,
+          totalCount: totalReceived
+        });
+      }
+    } catch (error) {
       self.postMessage({
-        type: 'COMPLETE',
-        solveId,
-        totalCount,
-        duration
+        type: 'ERROR',
+        error: error.message || error.toString()
       });
       currentSolveId = null;
-    } else {
-      self.postMessage({
-        type: 'CANCELLED',
-        solveId,
-        totalCount: totalReceived
-      });
     }
   }
 });

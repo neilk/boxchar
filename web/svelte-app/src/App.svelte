@@ -3,6 +3,7 @@
   import PuzzleLoader from './lib/PuzzleLoader.svelte';
   import LetterBox from './lib/LetterBox.svelte';
   import SolutionsDisplay from './lib/SolutionsDisplay.svelte';
+  import ErrorDisplay from './lib/ErrorDisplay.svelte';
   import {
     puzzleFields,
     isPuzzleComplete,
@@ -75,6 +76,9 @@
       <div class="status-message loading">Loading solver...</div>
     {/if}
   </div>
+
+  <!-- Error display - always visible when there's an error -->
+  <ErrorDisplay />
 
   <div class="container">
     <SolutionsDisplay />

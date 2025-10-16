@@ -82,7 +82,7 @@ pub fn solve_game_streaming(
     game_sides: Vec<String>,
     max_solutions: u16,
     callback: js_sys::Function,
-) -> u32 {
+) -> Result<u32, JsValue> {
     let generation = CURRENT_GENERATION.load(Ordering::SeqCst);
     console_log!("Starting solve with generation: {}", generation);
 
@@ -90,8 +90,9 @@ pub fn solve_game_streaming(
     let dictionary = match GLOBAL_DICTIONARY.get() {
         Some(dict) => dict,
         None => {
-            console_log!("Error: Dictionary not initialized");
-            return 0;
+            let error_msg = "Dictionary not initialized. Call initialize_dictionary first.";
+            console_log!("Error: {}", error_msg);
+            return Err(JsValue::from_str(error_msg));
         }
     };
 
@@ -100,7 +101,7 @@ pub fn solve_game_streaming(
         Ok(board) => board,
         Err(e) => {
             console_log!("Error creating board: {}", e);
-            return 0;
+            return Err(JsValue::from_str(&e.to_string()));
         }
     };
 
@@ -130,5 +131,5 @@ pub fn solve_game_streaming(
     }, generation);
 
     console_log!("Solve completed, found {} solutions", count);
-    count as u32
+    Ok(count as u32)
 }

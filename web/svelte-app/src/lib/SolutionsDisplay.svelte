@@ -69,12 +69,9 @@
 
 <div class="solutions-container">
   {#if $solutions.length > 0 || expanded}
-    {#if $solutions.length > 0 && $solutions[0]?.startsWith('Error:')}
-      <div class="error">{$solutions[0]}</div>
-    {:else}
-      <button class="toggle-btn" on:click={toggleExpanded}>
-        {expanded ? 'Hide Solutions' : 'Show Solutions'}
-      </button>
+    <button class="toggle-btn" on:click={toggleExpanded}>
+      {expanded ? 'Hide Solutions' : 'Show Solutions'}
+    </button>
 
       {#if !expanded}
         <!-- Collapsed: Simple summary -->
@@ -122,7 +119,6 @@
           {/each}
         </div>
       {/if}
-    {/if}
   {/if}
 </div>
 

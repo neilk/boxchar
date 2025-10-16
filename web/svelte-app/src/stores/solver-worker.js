@@ -5,6 +5,7 @@ export const solving = writable(false);
 export const solutions = writable([]);
 export const topSolutions = writable({}); // Top 3 per word count for quick display
 export const solveStats = writable({ totalReceived: 0, totalCount: 0, duration: null });
+export const solverError = writable(null); // Store for solver errors
 
 let currentSolveId = 0;
 let worker = null;
@@ -99,6 +100,7 @@ export function initializeSolverWorker(dictionaryData) {
 
     if (type === 'ERROR') {
       console.error('Solver error:', e.data.error);
+      solverError.set(e.data.error);
       solving.set(false);
     }
   });
@@ -121,6 +123,7 @@ export function solvePuzzle(sides, maxSolutions = 10000) {
   topSolutions.set({});
   allSolutions = []; // Clear the solutions array
   solveStats.set({ totalReceived: 0, totalCount: 0, duration: null });
+  solverError.set(null); // Clear any previous errors
 
   worker.postMessage({
     type: 'SOLVE',
