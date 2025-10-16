@@ -17,7 +17,7 @@
     solutions,
     solveStats
   } from './stores/solver-worker.js';
-  import { debounce } from './utils/debounce.js';
+  import { throttle } from './utils/throttle.js';
 
   let initError = null;
 
@@ -37,8 +37,8 @@
     }
   });
 
-  // Auto-solve with debounce when puzzle changes
-  const debouncedAutoSolve = debounce((fields) => {
+  // Auto-solve with throttle when puzzle changes
+  const throttledAutoSolve = throttle((fields) => {
     if (fields.every(f => f.length === 1 && /^[A-Z]$/.test(f))) {
       const sides = [
         fields.slice(0, 3).join(''),   // top
@@ -52,7 +52,7 @@
   }, 300);
 
   // Subscribe to puzzle changes for auto-solve
-  puzzleFields.subscribe(debouncedAutoSolve);
+  puzzleFields.subscribe(throttledAutoSolve);
 </script>
 
 <main>
