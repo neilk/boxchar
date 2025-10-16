@@ -81,7 +81,7 @@ function updateTopSolutions(topSols: TopSolutionsByWordCount, newSolutions: stri
 
 export function initializeSolverWorker(dictionaryData: Uint8Array): void {
   worker = new Worker(
-    new URL('../workers/solver-worker.js', import.meta.url),
+    new URL('../workers/solver-worker.ts', import.meta.url),
     { type: 'module' }
   );
 
