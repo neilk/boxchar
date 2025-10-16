@@ -1,32 +1,36 @@
-import { writable, derived } from 'svelte/store';
+import { writable, derived, type Writable } from 'svelte/store';
 
 // Puzzle fields store - array of 12 individual letters
 // Layout: [0-2: top, 3-5: right, 6-8: left, 9-11: bottom]
-export const puzzleFields = writable(Array(12).fill(''));
+export const puzzleFields: Writable<string[]> = writable(Array(12).fill(''));
 
 // Solutions store - array of solution strings
-export const solutions = writable([]);
+export const solutions: Writable<string[]> = writable([]);
 
 // Solver state
-export const solverReady = writable(false);
-export const solving = writable(false);
-export const solveTime = writable(null);
+export const solverReady: Writable<boolean> = writable(false);
+export const solving: Writable<boolean> = writable(false);
+export const solveTime: Writable<number | null> = writable(null);
 
 // Derived store - check if puzzle is complete
 export const isPuzzleComplete = derived(
   puzzleFields,
-  $fields => $fields.every(field => field.length === 1 && /^[A-Z]$/.test(field))
+  ($fields) => $fields.every(field => field.length === 1 && /^[A-Z]$/.test(field))
 );
 
 // Flag to control auto-saving
 let autoSaveEnabled = false;
 
+interface SavedPuzzle {
+  fields: string[];
+}
+
 // Load puzzle from localStorage
-export function loadPuzzleFromStorage() {
+export function loadPuzzleFromStorage(): void {
   try {
     const saved = localStorage.getItem('letterBoxedPuzzle');
     if (saved) {
-      const puzzle = JSON.parse(saved);
+      const puzzle = JSON.parse(saved) as SavedPuzzle;
       if (puzzle.fields && Array.isArray(puzzle.fields) && puzzle.fields.length === 12) {
         puzzleFields.set(puzzle.fields);
       }
@@ -40,7 +44,7 @@ export function loadPuzzleFromStorage() {
 }
 
 // Save puzzle to localStorage
-export function savePuzzleToStorage(fields) {
+export function savePuzzleToStorage(fields: string[]): void {
   try {
     localStorage.setItem('letterBoxedPuzzle', JSON.stringify({ fields }));
   } catch (error) {

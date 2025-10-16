@@ -1,25 +1,36 @@
-<script>
-  import { solutions, topSolutions, solving, solveStats } from '../stores/solver-worker.js';
+<script lang="ts">
+  import { solutions, topSolutions, solving, solveStats } from '../stores/solver-worker';
 
-  let solutionsByWordCount = {};
-  let expanded = false; // Don't reset this when puzzle changes
-  let modalSegment = null; // null or wordCount to show in modal
-  let modalSortOrder = 'best'; // 'best' or 'alphabetical'
+  interface ParsedSolution {
+    words: string;
+    score: string;
+  }
+
+  interface SolutionsByWordCount {
+    [wordCount: number]: string[];
+  }
+
+  type SortOrder = 'best' | 'alphabetical';
+
+  let solutionsByWordCount: SolutionsByWordCount = {};
+  let expanded: boolean = false; // Don't reset this when puzzle changes
+  let modalSegment: number | null = null; // null or wordCount to show in modal
+  let modalSortOrder: SortOrder = 'best'; // 'best' or 'alphabetical'
 
   // Parse solution string to extract words and score
-  function parseSolution(solutionStr) {
-    const parts = solutionStr.split(':');
-    const words = parts[0];
-    const score = parts[1] || '';
+  function parseSolution(solutionStr: string): ParsedSolution {
+    const parts: string[] = solutionStr.split(':');
+    const words: string = parts[0] || '';
+    const score: string = parts[1] || '';
     return { words, score };
   }
 
   // For collapsed view: always use full solutions to count
   $: {
     solutionsByWordCount = {};
-    $solutions.forEach(solution => {
+    $solutions.forEach((solution: string) => {
       const { words } = parseSolution(solution);
-      const wordCount = words.split('-').length;
+      const wordCount: number = words.split('-').length;
       if (!solutionsByWordCount[wordCount]) {
         solutionsByWordCount[wordCount] = [];
       }
@@ -35,30 +46,30 @@
     ? getSortedSolutions(solutionsByWordCount[modalSegment], modalSortOrder)
     : [];
 
-  function getSortedSolutions(solutions, sortOrder) {
-    const sorted = [...solutions];
+  function getSortedSolutions(solutionsArray: string[], sortOrder: SortOrder): string[] {
+    const sorted: string[] = [...solutionsArray];
     if (sortOrder === 'alphabetical') {
-      return sorted.sort((a, b) => a.localeCompare(b));
+      return sorted.sort((a: string, b: string) => a.localeCompare(b));
     }
     // 'best' keeps the original order (already sorted by score from solver)
     return sorted;
   }
 
-  function toggleExpanded() {
+  function toggleExpanded(): void {
     expanded = !expanded;
   }
 
-  function showModal(wordCount) {
+  function showModal(wordCount: number): void {
     modalSegment = wordCount;
     modalSortOrder = 'best'; // Reset to 'best' when opening modal
   }
 
-  function closeModal() {
+  function closeModal(): void {
     modalSegment = null;
   }
 
   // Handle escape key to close modal
-  function handleKeydown(e) {
+  function handleKeydown(e: KeyboardEvent): void {
     if (e.key === 'Escape' && modalSegment !== null) {
       closeModal();
     }
@@ -155,14 +166,6 @@
 <style>
   .solutions-container {
     margin-top: 20px;
-  }
-
-  .error {
-    color: var(--color-error);
-    background: var(--color-error-bg);
-    padding: 10px;
-    border-radius: 4px;
-    margin: 10px 0;
   }
 
   .toggle-btn {

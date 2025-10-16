@@ -1,5 +1,5 @@
-<script>
-  import { solverError } from '../stores/solver-worker.js';
+<script lang="ts">
+  import { solverError } from '../stores/solver-worker';
 </script>
 
 {#if $solverError}

@@ -1,16 +1,23 @@
-import { writable } from 'svelte/store';
+import { writable, type Writable } from 'svelte/store';
 
-export const wasmModule = writable(null);
-export const dictionaryInitialized = writable(false);
-export const initializationError = writable(null);
+export const wasmModule: Writable<unknown> = writable(null);
+export const dictionaryInitialized: Writable<boolean> = writable(false);
+export const initializationError: Writable<string | null> = writable(null);
 
-let wasmInstance = null;
+let wasmInstance: unknown = null;
 let dictInitialized = false;
 
-export async function initializeWasm() {
+interface WasmExports {
+  initialize_dictionary: (data: Uint8Array) => Promise<void>;
+  solve_game: (sides: string[], maxSolutions: number) => string[];
+}
+
+export async function initializeWasm(): Promise<{ solve_game: (sides: string[], maxSolutions: number) => string[] }> {
   try {
     // Import WASM module from src/pkg folder
-    const { default: init, initialize_dictionary, solve_game } = await import('../pkg/boxchar.js');
+    const wasmModule = await import('../pkg/boxchar.js');
+    const init = wasmModule.default;
+    const { initialize_dictionary, solve_game } = wasmModule as unknown as WasmExports & { default: () => Promise<unknown> };
 
     // First, initialize WASM module
     wasmInstance = await init();
@@ -37,16 +44,17 @@ export async function initializeWasm() {
     // Return the solve_game function for use
     return { solve_game };
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
     console.error('WASM initialization failed:', error);
-    initializationError.set(error.message);
+    initializationError.set(errorMessage);
     throw error;
   }
 }
 
-export function getWasmInstance() {
+export function getWasmInstance(): unknown {
   return wasmInstance;
 }
 
-export function isDictionaryInitialized() {
+export function isDictionaryInitialized(): boolean {
   return dictInitialized;
 }

@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { onMount } from 'svelte';
   import PuzzleLoader from './lib/PuzzleLoader.svelte';
   import LetterBox from './lib/LetterBox.svelte';
@@ -8,7 +8,7 @@
     puzzleFields,
     isPuzzleComplete,
     loadPuzzleFromStorage
-  } from './stores/puzzle.js';
+  } from './stores/puzzle';
   import {
     initializeSolverWorker,
     solvePuzzle as workerSolvePuzzle,
@@ -16,10 +16,10 @@
     solving,
     solutions,
     solveStats
-  } from './stores/solver-worker.js';
-  import { throttle } from './utils/throttle.js';
+  } from './stores/solver-worker';
+  import { throttle } from './utils/throttle';
 
-  let initError = null;
+  let initError: string | null = null;
 
   onMount(async () => {
     // Load saved puzzle from localStorage
@@ -32,13 +32,13 @@
       const dictionaryData = new TextEncoder().encode(dictionaryText);
       initializeSolverWorker(dictionaryData);
     } catch (error) {
-      initError = error.message;
+      initError = error instanceof Error ? error.message : 'Unknown error';
       console.error('Failed to initialize solver worker:', error);
     }
   });
 
   // Auto-solve with throttle when puzzle changes
-  const throttledAutoSolve = throttle((fields) => {
+  const throttledAutoSolve = throttle((fields: string[]) => {
     if (fields.every(f => f.length === 1 && /^[A-Z]$/.test(f))) {
       const sides = [
         fields.slice(0, 3).join(''),   // top

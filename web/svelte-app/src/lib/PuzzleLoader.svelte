@@ -1,9 +1,14 @@
-<script>
-  import { puzzleFields } from '../stores/puzzle.js';
+<script lang="ts">
+  import { puzzleFields } from '../stores/puzzle';
 
-  let loading = false;
+  interface ExamplePuzzle {
+    label: string;
+    value: string;
+  }
 
-  const examplePuzzles = [
+  let loading: boolean = false;
+
+  const examplePuzzles: ExamplePuzzle[] = [
     { label: 'JGH NVY EID ORP', value: 'JGHNVYEIDORP' },
     { label: 'YFA OTK LGW RNI', value: 'YFAOTKLGWRNI' },
     { label: 'LHM CIB ANK OUP', value: 'LHMCIBANKOUP' },
@@ -12,52 +17,54 @@
     { label: 'VYQ FIG OTE XLU', value: 'VYQFIGOTEXLU' }
   ];
 
-  async function loadTodaysPuzzle() {
+  async function loadTodaysPuzzle(): Promise<void> {
     loading = true;
     try {
-      const url = 'https://www.nytimes.com/puzzles/letter-boxed';
-      let response;
+      const url: string = 'https://www.nytimes.com/puzzles/letter-boxed';
+      let response: Response;
 
       // Try direct fetch first (works on deployed HTTPS sites)
       try {
         response = await fetch(url);
       } catch (e) {
         // Fall back to CORS proxy for localhost
-        const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
+        const proxyUrl: string = 'https://corsproxy.io/?' + encodeURIComponent(url);
         response = await fetch(proxyUrl);
       }
 
-      const html = await response.text();
-      const regex = /window\.gameData.*?"sides"\s*:\s*(\[.*?\])/;
-      const match = html.match(regex);
+      const html: string = await response.text();
+      const regex: RegExp = /window\.gameData.*?"sides"\s*:\s*(\[.*?\])/;
+      const match: RegExpMatchArray | null = html.match(regex);
 
       if (!match) {
         alert('Failed to find puzzle data on the NYT page. The page format may have changed.');
         return;
       }
 
-      const sidesData = JSON.parse(match[1]);
+      const sidesData: string[] = JSON.parse(match[1]) as string[];
       // Convert sides array to fields array
-      const fields = sidesData.flatMap(side => side.split(''));
+      const fields: string[] = sidesData.flatMap((side: string) => side.split(''));
       puzzleFields.set(fields);
     } catch (error) {
-      alert('Failed to load today\'s puzzle: ' + error.message);
+      const message: string = error instanceof Error ? error.message : 'Unknown error';
+      alert('Failed to load today\'s puzzle: ' + message);
     } finally {
       loading = false;
     }
   }
 
-  function loadExample(event) {
-    const value = event.target.value;
+  function loadExample(event: Event): void {
+    const target = event.target as HTMLSelectElement;
+    const value: string = target.value;
     if (!value) return;
 
     // Convert string of 12 letters to array
-    const fields = value.split('');
+    const fields: string[] = value.split('');
     puzzleFields.set(fields);
 
     // Reset dropdown
     setTimeout(() => {
-      event.target.value = '';
+      target.value = '';
     }, 100);
   }
 </script>

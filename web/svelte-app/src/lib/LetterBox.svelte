@@ -1,13 +1,14 @@
-<script>
-  import { puzzleFields } from '../stores/puzzle.js';
+<script lang="ts">
+  import { puzzleFields } from '../stores/puzzle';
 
-  function handleInput(index, event) {
-    const value = event.target.value.toUpperCase();
+  function handleInput(index: number, event: Event): void {
+    const target = event.target as HTMLInputElement;
+    const value = target.value.toUpperCase();
 
     // Only allow single uppercase letter
     if (value.length > 0) {
-      const letter = value[value.length - 1].replace(/[^A-Z]/g, '');
-      event.target.value = letter;
+      const letter = value[value.length - 1]!.replace(/[^A-Z]/g, '');
+      target.value = letter;
 
       // Update the store
       puzzleFields.update(fields => {
@@ -25,7 +26,7 @@
         }
       }
     } else {
-      event.target.value = '';
+      target.value = '';
       puzzleFields.update(fields => {
         const newFields = [...fields];
         newFields[index] = '';
@@ -34,9 +35,10 @@
     }
   }
 
-  function handleKeydown(index, event) {
+  function handleKeydown(index: number, event: KeyboardEvent): void {
+    const target = event.target as HTMLInputElement;
     // Handle backspace to go to previous field
-    if (event.key === 'Backspace' && !event.target.value && index > 0) {
+    if (event.key === 'Backspace' && !target.value && index > 0) {
       event.preventDefault();
       const prevField = document.getElementById(`char${String(index - 1).padStart(2, '0')}`);
       if (prevField) {
@@ -46,8 +48,9 @@
     }
   }
 
-  function handleClick(event) {
-    event.target.select();
+  function handleClick(event: MouseEvent): void {
+    const target = event.target as HTMLInputElement;
+    target.select();
   }
 </script>
 
