@@ -48,3 +48,15 @@
 
   RUSTFLAGS="-g" cargo build --release
   instruments -t "Time Profiler" -D trace.trace ./target/release/boxchar
+
+
+
+## Bugs!
+
+- Can get a WASM not ready bug (thought we awaited that, should we loop)
+- Are errors always visible? Maybe we fixed that
+
+## TODO
+
+- some playwright tests, this is getting gnarly
+
