@@ -1,18 +1,15 @@
 <script lang="ts">
-  import { solutions, topSolutions, solving, solveStats } from '../stores/solver-worker';
+  import { solutions, topSolutions, solving, solutionCounts } from '../stores/solver-worker';
 
   interface ParsedSolution {
     words: string;
     score: string;
   }
 
-  interface SolutionsByWordCount {
-    [wordCount: number]: string[];
-  }
-
   type SortOrder = 'best' | 'alphabetical';
 
-  let solutionsByWordCount: SolutionsByWordCount = {};
+  // Array indexed by word count (1-word solutions at index 1, etc.)
+  let solutionsByWordCount: string[][] = [];
   let expanded: boolean = false; // Don't reset this when puzzle changes
   let modalSegment: number | null = null; // null or wordCount to show in modal
   let modalSortOrder: SortOrder = 'best'; // 'best' or 'alphabetical'
@@ -25,9 +22,9 @@
     return { words, score };
   }
 
-  // For collapsed view: always use full solutions to count
+  // Group all solutions by word count
   $: {
-    solutionsByWordCount = {};
+    solutionsByWordCount = [];
     $solutions.forEach((solution: string) => {
       const { words } = parseSolution(solution);
       const wordCount: number = words.split('-').length;
@@ -38,12 +35,36 @@
     });
   }
 
-  // For expanded view: use topSolutions during solving, full solutions when done
-  $: displaySolutions = $solving ? $topSolutions : solutionsByWordCount;
+  // Get total count for a given word count (handles both solving and complete states)
+  function getTotalCount(wordCount: number): number {
+    if ($solving) {
+      return $solutionCounts[wordCount] || 0;
+    }
+    return solutionsByWordCount[wordCount]?.length || 0;
+  }
+
+  // Get solutions to display for a given word count (handles both solving and complete states)
+  function getSolutionsForWordCount(wordCount: number): string[] {
+    if ($solving) {
+      return $topSolutions[wordCount] || [];
+    }
+    return solutionsByWordCount[wordCount] || [];
+  }
+
+  // Get all word counts that have solutions (for iteration)
+  function getWordCounts(): number[] {
+    if ($solving) {
+      return Object.keys($solutionCounts).map(Number).sort((a, b) => a - b);
+    }
+    return solutionsByWordCount
+      .map((_, idx) => idx)
+      .filter(idx => (solutionsByWordCount[idx] ?? []).length > 0)
+      .sort((a, b) => a - b);
+  }
 
   // Get sorted solutions for modal based on current sort order
   $: modalSolutions = modalSegment !== null && solutionsByWordCount[modalSegment]
-    ? getSortedSolutions(solutionsByWordCount[modalSegment], modalSortOrder)
+    ? getSortedSolutions(solutionsByWordCount[modalSegment] || [], modalSortOrder)
     : [];
 
   function getSortedSolutions(solutionsArray: string[], sortOrder: SortOrder): string[] {
@@ -79,67 +100,67 @@
 <svelte:window on:keydown={handleKeydown} />
 
 <div class="solutions-container">
-  {#if $solutions.length > 0 || expanded}
-    <button class="toggle-btn" on:click={toggleExpanded}>
-      {expanded ? 'Hide Solutions' : 'Show Solutions'}
-    </button>
+  <button class="toggle-btn" on:click={toggleExpanded}>
+    {expanded ? 'Hide Solutions' : 'Show Solutions'}
+  </button>
 
-      {#if !expanded}
-        <!-- Collapsed: Simple summary -->
-        <div class="summary">
-          {#each Object.keys(solutionsByWordCount).sort((a, b) => a - b) as wordCount}
-            {@const total = solutionsByWordCount[wordCount].length}
-            <div class="summary-row">
-              <span class="summary-label">{wordCount} word{wordCount === '1' ? '' : 's'}:</span>
-              <span class="summary-count">{total}</span>
-            </div>
-          {/each}
+  {#if !expanded}
+    <!-- Collapsed: Simple summary - show live counts during solving -->
+    <div class="summary">
+      {#each getWordCounts() as wordCount}
+        {@const total = getTotalCount(wordCount)}
+        <div class="summary-row">
+          <span class="summary-label">{wordCount} word{wordCount === 1 ? '' : 's'}:</span>
+          <span class="summary-count">{total}</span>
         </div>
-      {:else}
-        <!-- Expanded: Summary rows become headers with solutions below -->
-        <div class="expanded-view">
-          {#each Object.keys(displaySolutions).sort((a, b) => a - b) as wordCount}
-            {@const segmentSolutions = displaySolutions[wordCount] || []}
-            {@const total = solutionsByWordCount[wordCount]?.length || 0}
-            {@const showButton = total > 3}
+      {/each}
+    </div>
+  {:else}
+    <!-- Expanded: Summary rows become headers with solutions below -->
+    <div class="expanded-view">
+      {#each getWordCounts() as wordCount}
+        {@const segmentSolutions = getSolutionsForWordCount(wordCount)}
+        {@const total = getTotalCount(wordCount)}
+        {@const showButton = !$solving && total > 3}
 
-            <div class="segment">
-              <div class="segment-header">
-                <span class="segment-label">{wordCount} word{wordCount === '1' ? '' : 's'}:</span>
-                {#if showButton}
-                  <button
-                    class="show-all-btn"
-                    on:click={() => showModal(wordCount)}
-                    disabled={$solving}
-                  >
-                    Show all {total}
-                  </button>
-                {/if}
-              </div>
+        <div class="segment">
+          <div class="segment-header">
+            <span class="segment-label">{wordCount} word{wordCount === 1 ? '' : 's'}: {total}</span>
+            {#if showButton}
+              <button
+                class="show-all-btn"
+                on:click={() => showModal(wordCount)}
+              >
+                Show all
+              </button>
+            {/if}
+          </div>
 
-              <div class="solutions-list">
-                {#each ($solving ? segmentSolutions : segmentSolutions.slice(0, 3)) as solution}
-                  {@const parsed = parseSolution(solution)}
-                  <div class="solution-item">
-                    <span class="solution-words">{parsed.words}</span>
-                    <span class="solution-score">{parsed.score}</span>
-                  </div>
-                {/each}
+          <div class="solutions-list">
+            {#each ($solving ? segmentSolutions : segmentSolutions.slice(0, 3)) as solution}
+              {@const parsed = parseSolution(solution)}
+              <div class="solution-item">
+                <span class="solution-words">{parsed.words}</span>
+                <span class="solution-score">{parsed.score}</span>
               </div>
-            </div>
-          {/each}
+            {/each}
+          </div>
         </div>
-      {/if}
+      {/each}
+    </div>
   {/if}
 </div>
 
 <!-- Modal -->
 {#if modalSegment !== null}
-  <div class="modal-overlay" on:click={closeModal} role="dialog" aria-modal="true">
+  <!-- svelte-ignore a11y-click-events-have-key-events -->
+  <!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
+  <div tabindex="0" class="modal-overlay" on:click={closeModal} role="dialog" aria-modal="true">
+    <!-- svelte-ignore a11y-no-static-element-interactions -->
     <div class="modal-content" on:click|stopPropagation role="document">
       <div class="modal-header">
         <div class="modal-header-left">
-          <h3>{modalSegment}-word solutions ({solutionsByWordCount[modalSegment].length} total)</h3>
+          <h3>{modalSegment}-word solutions ({(solutionsByWordCount[modalSegment] || []).length} total)</h3>
           <div class="sort-control">
             <label for="sort-select">Sort by:</label>
             <select id="sort-select" bind:value={modalSortOrder}>

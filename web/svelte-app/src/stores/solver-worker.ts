@@ -10,6 +10,10 @@ interface TopSolutionsByWordCount {
   [wordCount: number]: string[];
 }
 
+interface CountsByWordCount {
+  [wordCount: number]: number;
+}
+
 interface ParsedSolution {
   words: string;
   score: number;
@@ -30,6 +34,7 @@ export const solverReady: Writable<boolean> = writable(false);
 export const solving: Writable<boolean> = writable(false);
 export const solutions: Writable<string[]> = writable([]);
 export const topSolutions: Writable<TopSolutionsByWordCount> = writable({}); // Top 3 per word count for quick display
+export const solutionCounts: Writable<CountsByWordCount> = writable({}); // Live count of solutions per word count
 export const solveStats: Writable<SolveStats> = writable({ totalReceived: 0, totalCount: 0, duration: null });
 export const solverError: Writable<string | null> = writable(null); // Store for solver errors
 
@@ -101,6 +106,16 @@ export function initializeSolverWorker(dictionaryData: Uint8Array): void {
         // Update top 3 for quick display
         topSolutions.update(top => updateTopSolutions(top, batchSolutions));
 
+        // Update counts by word count
+        solutionCounts.update(counts => {
+          const updated = { ...counts };
+          batchSolutions.forEach(sol => {
+            const wordCount = getWordCount(sol);
+            updated[wordCount] = (updated[wordCount] || 0) + 1;
+          });
+          return updated;
+        });
+
         if (totalReceived !== undefined) {
           solveStats.update(stats => ({ ...stats, totalReceived }));
         }
@@ -151,6 +166,7 @@ export function solvePuzzle(sides: string[], maxSolutions = 10000): void {
   solving.set(true);
   solutions.set([]);
   topSolutions.set({});
+  solutionCounts.set({}); // Clear counts
   allSolutions = []; // Clear the solutions array
   solveStats.set({ totalReceived: 0, totalCount: 0, duration: null });
   solverError.set(null); // Clear any previous errors

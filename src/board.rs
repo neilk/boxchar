@@ -4,6 +4,8 @@ use std::fs::File;
 use std::io::{self, BufRead, BufReader};
 use std::path::Path;
 
+const SIDES_DISPLAY: &[&str] = &["top", "right", "bottom", "left"];
+
 #[derive(Debug, Clone)]
 pub struct Board {
     pub sides: Vec<String>,
@@ -53,8 +55,8 @@ impl Board {
             if side.len() != first_len {
                 return Err(io::Error::new(
                     io::ErrorKind::InvalidData,
-                    format!("All sides must have the same length. Side 0 has length {} but side {} has length {}", 
-                        first_len, i, side.len())
+                    format!("All sides must have the same length. The {} side has length {} but the {} side has length {}", 
+                        SIDES_DISPLAY[0], first_len, SIDES_DISPLAY[i], side.len())
                 ));
             }
         }
@@ -70,18 +72,18 @@ impl Board {
                 if !c.is_ascii_lowercase() {
                     return Err(io::Error::new(
                         io::ErrorKind::InvalidData,
-                        format!("Invalid character '{}' on side {}. Only lowercase ASCII letters are allowed", 
-                            c, side_num)
+                        format!("Invalid character '{}' on the {} side. Only lowercase ASCII letters are allowed", 
+                            c, SIDES_DISPLAY[side_num])
                     ));
                 }
 
                 if let Some(previous_side) = seen_chars.insert(c, side_num) {
                     let error = if previous_side == side_num {
-                        format!("Duplicate letter '{}' found on side {}", c, side_num)
+                        format!("Duplicate letter '{}' found on the {} side", c, SIDES_DISPLAY[side_num])
                     } else {
                         format!(
-                            "Duplicate letter '{}' found on sides {} and {}",
-                            c, previous_side, side_num
+                            "Duplicate letter '{}' found on the {} side and the {} side",
+                            c, SIDES_DISPLAY[previous_side], SIDES_DISPLAY[side_num]
                         )
                     };
                     return Err(io::Error::new(io::ErrorKind::InvalidData, error));
