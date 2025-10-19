@@ -1,4 +1,4 @@
-# Boxchar
+# Letter Bounced 
 
 A solver for the New York Times word puzzle, "Letter Boxed". 
 
