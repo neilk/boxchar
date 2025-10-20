@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { solutions, topSolutions, solving, solutionCounts } from '../stores/solver-worker';
+  import { solutions, solving } from '../stores/solver-worker';
 
   interface ParsedSolution {
     words: string;
@@ -35,27 +35,18 @@
     });
   }
 
-  // Get total count for a given word count (handles both solving and complete states)
+  // Get total count for a given word count
   function getTotalCount(wordCount: number): number {
-    if ($solving) {
-      return $solutionCounts[wordCount] || 0;
-    }
     return solutionsByWordCount[wordCount]?.length || 0;
   }
 
-  // Get solutions to display for a given word count (handles both solving and complete states)
+  // Get solutions to display for a given word count
   function getSolutionsForWordCount(wordCount: number): string[] {
-    if ($solving) {
-      return $topSolutions[wordCount] || [];
-    }
     return solutionsByWordCount[wordCount] || [];
   }
 
   // Get all word counts that have solutions (for iteration)
   function getWordCounts(): number[] {
-    if ($solving) {
-      return Object.keys($solutionCounts).map(Number).sort((a, b) => a - b);
-    }
     return solutionsByWordCount
       .map((_, idx) => idx)
       .filter(idx => (solutionsByWordCount[idx] ?? []).length > 0)
@@ -105,7 +96,7 @@
   </button>
 
   {#if !expanded}
-    <!-- Collapsed: Simple summary - show live counts during solving -->
+    <!-- Collapsed: Simple summary -->
     <div class="summary">
       {#each getWordCounts() as wordCount}
         {@const total = getTotalCount(wordCount)}
@@ -121,7 +112,7 @@
       {#each getWordCounts() as wordCount}
         {@const segmentSolutions = getSolutionsForWordCount(wordCount)}
         {@const total = getTotalCount(wordCount)}
-        {@const showButton = !$solving && total > 3}
+        {@const showButton = total > 3}
 
         <div class="segment">
           <div class="segment-header">
@@ -137,7 +128,7 @@
           </div>
 
           <div class="solutions-list">
-            {#each ($solving ? segmentSolutions : segmentSolutions.slice(0, 3)) as solution}
+            {#each segmentSolutions.slice(0, 3) as solution}
               {@const parsed = parseSolution(solution)}
               <div class="solution-item">
                 <span class="solution-words">{parsed.words}</span>

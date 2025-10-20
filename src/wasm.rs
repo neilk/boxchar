@@ -1,5 +1,5 @@
 use wasm_bindgen::prelude::*;
-use wasm_bindgen_futures::spawn_local;
+use wasm_bindgen_futures::future_to_promise;
 use crate::board::Board;
 use crate::dictionary::Dictionary;
 use crate::solver::Solver;
@@ -60,16 +60,13 @@ pub fn initialize_dictionary(dictionary_data: Vec<u8>) -> Result<(), String> {
 pub fn solve_game(game_sides: Vec<String>, max_solutions: u16) -> Promise {
     console_log!("Solve requested with {} sides", game_sides.len());
 
-    // Create a promise to return
-    let promise = Promise::new(&mut |resolve, reject| {
+    future_to_promise(async move {
         // Check if dictionary is initialized
         let dictionary = match GLOBAL_DICTIONARY.get() {
             Some(dict) => dict,
             None => {
                 console_log!("Error: Dictionary not initialized");
-                let error = JsValue::from_str("Dictionary not initialized");
-                reject.call1(&JsValue::null(), &error).unwrap();
-                return;
+                return Err(JsValue::from_str("Dictionary not initialized"));
             }
         };
 
@@ -89,9 +86,7 @@ pub fn solve_game(game_sides: Vec<String>, max_solutions: u16) -> Promise {
                     task.cancel_flag.store(true, Ordering::Relaxed);
                 } else {
                     console_log!("Solve already in progress with same params, rejecting duplicate");
-                    let error = JsValue::from_str("Solve already in progress");
-                    reject.call1(&JsValue::null(), &error).unwrap();
-                    return;
+                    return Err(JsValue::from_str("Solve already in progress"));
                 }
             }
 
@@ -105,72 +100,70 @@ pub fn solve_game(game_sides: Vec<String>, max_solutions: u16) -> Promise {
             cancel_flag
         } else {
             console_log!("Error: CURRENT_SOLVE not initialized");
-            let error = JsValue::from_str("Solver not initialized");
-            reject.call1(&JsValue::null(), &error).unwrap();
-            return;
+            return Err(JsValue::from_str("Solver not initialized"));
         };
 
-        // Create the board (clone game_sides since we need it later)
-        let board = match Board::from_sides(game_sides.clone()) {
+        // Create the board
+        let board = match Board::from_sides(game_sides) {
             Ok(board) => board,
             Err(e) => {
                 console_log!("Error creating board: {}", e);
-                let error = JsValue::from_str(&e.to_string());
-                reject.call1(&JsValue::null(), &error).unwrap();
 
                 // Clear current task since we failed
                 if let Some(solve_mutex) = CURRENT_SOLVE.get() {
                     *solve_mutex.lock().unwrap() = None;
                 }
-                return;
+
+                return Err(JsValue::from_str(&e.to_string()));
             }
         };
 
         // Clone the Arc (cheap) for the async task
         let dictionary_arc = dictionary.clone();
 
-        // Spawn the solve task
-        spawn_local(async move {
-            console_log!("Starting solve task");
+        console_log!("Starting solve task");
 
-            let solver = Solver::new(board, &dictionary_arc, max_solutions);
-            let solutions = solver.solve_cancellable(Some(cancel_flag.clone()));
+        let solver = Solver::new(board, &dictionary_arc, max_solutions);
+        let solutions = solver.solve_cancellable(Some(cancel_flag.clone()));
 
-            // Check if we were cancelled
-            if cancel_flag.load(Ordering::Relaxed) {
-                console_log!("Solve was cancelled");
-                let error = JsValue::from_str("Cancelled");
-                let _ = reject.call1(&JsValue::null(), &error);
-            } else {
-                console_log!("Found {} solutions", solutions.len());
-
-                // Convert solutions to JS array
-                let js_array = js_sys::Array::new();
-                for solution in &solutions {
-                    let solution_str = format!("{}:{}", solution.to_string(), solution.score);
-                    js_array.push(&JsValue::from_str(&solution_str));
-                }
-
-                // Resolve the promise with the results
-                let _ = resolve.call1(&JsValue::null(), &js_array);
-            }
+        // Check if we were cancelled
+        if cancel_flag.load(Ordering::Relaxed) {
+            console_log!("Solve was cancelled");
 
             // Clear current task
             if let Some(solve_mutex) = CURRENT_SOLVE.get() {
                 let mut current = solve_mutex.lock().unwrap();
-                // Only clear if this is still our task (not replaced by a new one)
                 if let Some(ref task) = *current {
                     if Arc::ptr_eq(&task.cancel_flag, &cancel_flag) {
                         *current = None;
                     }
                 }
             }
-        });
 
-        console_log!("Solve task spawned");
-    });
+            return Err(JsValue::from_str("Cancelled"));
+        }
 
-    promise
+        console_log!("Found {} solutions", solutions.len());
+
+        // Convert solutions to JS array
+        let js_array = js_sys::Array::new();
+        for solution in &solutions {
+            let solution_str = format!("{}:{}", solution.to_string(), solution.score);
+            js_array.push(&JsValue::from_str(&solution_str));
+        }
+
+        // Clear current task
+        if let Some(solve_mutex) = CURRENT_SOLVE.get() {
+            let mut current = solve_mutex.lock().unwrap();
+            if let Some(ref task) = *current {
+                if Arc::ptr_eq(&task.cancel_flag, &cancel_flag) {
+                    *current = None;
+                }
+            }
+        }
+
+        Ok(js_array.into())
+    })
 }
 
 #[wasm_bindgen]
