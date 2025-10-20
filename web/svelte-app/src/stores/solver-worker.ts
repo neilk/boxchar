@@ -32,18 +32,24 @@ export function initializeSolverWorker(dictionaryData: Uint8Array): void {
   worker.addEventListener('message', (e: MessageEvent<WorkerMessage>) => {
     const { type, solveId, solutions: receivedSolutions, totalCount, duration, error } = e.data;
 
+    console.log(`[Store] Received ${type} message, solveId=${solveId}, currentSolveId=${currentSolveId}`);
+
     if (type === 'READY') {
       solverReady.set(true);
     }
 
     if (type === 'COMPLETE') {
+      console.log(`[Store] COMPLETE check: solveId=${solveId}, currentSolveId=${currentSolveId}, match=${solveId === currentSolveId}, solutions count=${receivedSolutions?.length}`);
       if (solveId === currentSolveId && receivedSolutions) {
+        console.log(`[Store] Setting solutions, count=${receivedSolutions.length}`);
         // Solutions are already sorted by score from the Rust solver
         solutions.set(receivedSolutions);
         solving.set(false);
         if (totalCount !== undefined && duration !== undefined) {
           solveStats.set({ totalCount, duration });
         }
+      } else {
+        console.log(`[Store] Ignoring COMPLETE - solveId mismatch or no solutions`);
       }
     }
 
@@ -72,6 +78,7 @@ export function solvePuzzle(sides: string[], maxSolutions = 10000): void {
   }
 
   currentSolveId++;
+  console.log(`[Store] solvePuzzle called, new solveId=${currentSolveId}, sides=${sides.join(',')}`);
   solving.set(true);
   solutions.set([]);
   solveStats.set({ totalCount: 0, duration: null });

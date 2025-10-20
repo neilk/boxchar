@@ -54,6 +54,8 @@ self.addEventListener('message', async (e: MessageEvent<WorkerMessageData>) => {
     // Wait for WASM to be ready
     await wasmReady;
 
+    console.log(`[Worker] Received SOLVE request, solveId=${solveId}, sides=${payload?.sides?.join(',')}`);
+
     // Note: The WASM layer now handles cancellation automatically when a new solve
     // with different params is requested. We just track solveId for message correlation.
     currentSolveId = solveId ?? null;
@@ -63,6 +65,7 @@ self.addEventListener('message', async (e: MessageEvent<WorkerMessageData>) => {
     try {
       const startTime = performance.now();
 
+      console.log(`[Worker] Calling solve_game for solveId=${solveId}`);
       // Call the Promise-based solve_game
       const solutions = await solve_game(sides, maxSolutions);
       const duration = Math.round(performance.now() - startTime);
@@ -70,8 +73,11 @@ self.addEventListener('message', async (e: MessageEvent<WorkerMessageData>) => {
       // Convert JS array to regular array of strings
       const solutionsArray = Array.from(solutions);
 
+      console.log(`[Worker] solve_game completed for solveId=${solveId}, solutions=${solutionsArray.length}, currentSolveId=${currentSolveId}`);
+
       // Only send complete message if this solve is still current
       if (currentSolveId === solveId) {
+        console.log(`[Worker] Sending COMPLETE message for solveId=${solveId}`);
         self.postMessage({
           type: 'COMPLETE',
           solveId,
@@ -80,9 +86,13 @@ self.addEventListener('message', async (e: MessageEvent<WorkerMessageData>) => {
           duration
         } as OutgoingMessage);
         currentSolveId = null;
+      } else {
+        console.log(`[Worker] NOT sending COMPLETE - currentSolveId changed to ${currentSolveId}`);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
+
+      console.log(`[Worker] solve_game failed for solveId=${solveId}, error=${errorMessage}`);
 
       // Check if it was a cancellation
       if (errorMessage === 'Cancelled' || errorMessage.includes('already in progress')) {

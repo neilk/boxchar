@@ -71,10 +71,6 @@
     <div class="game-input">
       <LetterBox />
     </div>
-
-    {#if !$solverReady}
-      <div class="status-message loading">Loading solver...</div>
-    {/if}
   </div>
 
   <!-- Error display - always visible when there's an error -->

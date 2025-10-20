@@ -10,7 +10,6 @@
 
   // Array indexed by word count (1-word solutions at index 1, etc.)
   let solutionsByWordCount: string[][] = [];
-  let expanded: boolean = false; // Don't reset this when puzzle changes
   let modalSegment: number | null = null; // null or wordCount to show in modal
   let modalSortOrder: SortOrder = 'best'; // 'best' or 'alphabetical'
 
@@ -24,15 +23,17 @@
 
   // Group all solutions by word count
   $: {
-    solutionsByWordCount = [];
+    const grouped: string[][] = [];
     $solutions.forEach((solution: string) => {
       const { words } = parseSolution(solution);
       const wordCount: number = words.split('-').length;
-      if (!solutionsByWordCount[wordCount]) {
-        solutionsByWordCount[wordCount] = [];
+      if (!grouped[wordCount]) {
+        grouped[wordCount] = [];
       }
-      solutionsByWordCount[wordCount].push(solution);
+      grouped[wordCount].push(solution);
     });
+    // Assign the newly created array to trigger reactivity
+    solutionsByWordCount = grouped;
   }
 
   // Get total count for a given word count
@@ -67,10 +68,6 @@
     return sorted;
   }
 
-  function toggleExpanded(): void {
-    expanded = !expanded;
-  }
-
   function showModal(wordCount: number): void {
     modalSegment = wordCount;
     modalSortOrder = 'best'; // Reset to 'best' when opening modal
@@ -91,23 +88,16 @@
 <svelte:window on:keydown={handleKeydown} />
 
 <div class="solutions-container">
-  <button class="toggle-btn" on:click={toggleExpanded}>
-    {expanded ? 'Hide Solutions' : 'Show Solutions'}
-  </button>
-
-  {#if !expanded}
-    <!-- Collapsed: Simple summary -->
-    <div class="summary">
-      {#each getWordCounts() as wordCount}
-        {@const total = getTotalCount(wordCount)}
-        <div class="summary-row">
-          <span class="summary-label">{wordCount} word{wordCount === 1 ? '' : 's'}:</span>
-          <span class="summary-count">{total}</span>
-        </div>
-      {/each}
+  {#if $solving}
+    <!-- Show loading state while solving -->
+    <div class="loading-state">
+      <div class="loading-spinner"></div>
+      <span class="loading-text">Finding solutions...</span>
     </div>
+  {:else if getWordCounts().length === 0}
+    <div class="no-solutions">No solutions yet. Enter a puzzle to solve.</div>
   {:else}
-    <!-- Expanded: Summary rows become headers with solutions below -->
+    <!-- Always show expanded view with solutions -->
     <div class="expanded-view">
       {#each getWordCounts() as wordCount}
         {@const segmentSolutions = getSolutionsForWordCount(wordCount)}
@@ -180,51 +170,40 @@
     margin-top: 20px;
   }
 
-  .toggle-btn {
-    width: 100%;
-    padding: 12px 24px;
-    background: var(--color-primary);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    margin-bottom: 15px;
-    transition: background 0.2s ease;
-  }
-
-  .toggle-btn:hover {
-    background: var(--color-primary-hover);
-  }
-
-  .summary {
+  .loading-state {
     border: 1px solid var(--color-border-light);
     border-radius: 6px;
-    padding: 15px;
+    padding: 40px 15px;
     background: var(--color-bg-container);
-  }
-
-  .summary-row {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: center;
-    padding: 8px 0;
-    border-bottom: 1px solid var(--color-border-light);
+    gap: 15px;
   }
 
-  .summary-row:last-child {
-    border-bottom: none;
+  .loading-spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid var(--color-border-light);
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
   }
 
-  .summary-label {
-    font-weight: 500;
-    color: var(--color-text);
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
 
-  .summary-count {
-    font-weight: 600;
-    color: var(--color-primary);
+  .loading-text {
+    color: var(--color-text-muted);
+    font-size: 14px;
+  }
+
+  .no-solutions {
+    padding: 20px;
+    text-align: center;
+    color: var(--color-text-muted);
+    font-style: italic;
   }
 
   .show-all-btn {
