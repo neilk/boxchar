@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:github": "vite build --base=/boxchar/",
+    "build:github": "vite build --base=/letterbounced/",
     "preview": "vite preview"
   },
   "devDependencies": {

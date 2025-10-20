@@ -15,7 +15,7 @@ interface WasmExports {
 export async function initializeWasm(): Promise<{ solve_game: (sides: string[], maxSolutions: number) => string[] }> {
   try {
     // Import WASM module from src/pkg folder
-    const wasmModule = await import('../pkg/boxchar.js');
+    const wasmModule = await import('../pkg/letter_bounced.js');
     const init = wasmModule.default;
     const { initialize_dictionary, solve_game } = wasmModule as unknown as WasmExports & { default: () => Promise<unknown> };
 

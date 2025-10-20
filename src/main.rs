@@ -1,10 +1,10 @@
-use boxchar::{board::Board, solver::Solver, dictionary::Dictionary}; // using our library!
+use letter_bounced::{board::Board, solver::Solver, dictionary::Dictionary}; // using our library!
 use clap::Parser;
 use log::debug;
 use std::{collections::HashSet, path::Path};
 
 #[derive(Parser)]
-#[command(name = "boxchar")]
+#[command(name = "letter-bounced")]
 #[command(about = "A Rust word game application for Letter Boxed puzzles")]
 struct Args {
     /// Game specification as comma-separated sides (e.g., "ABC,DEF,GHI,JKL")

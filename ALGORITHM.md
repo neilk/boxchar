@@ -1,4 +1,4 @@
-# Boxchar Letter Boxed Solver Algorithm
+# Letter Bounced - Letter Boxed Solver Algorithm
 
 ## Goals
 

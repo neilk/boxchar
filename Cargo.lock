@@ -62,19 +62,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "boxchar"
-version = "0.1.0"
-dependencies = [
- "clap",
- "env_logger",
- "js-sys",
- "log",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
-]
-
-[[package]]
 name = "bumpalo"
 version = "3.19.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -205,6 +192,19 @@ checksum = "ec48937a97411dcb524a265206ccd4c90bb711fca92b2792c407f268825b9305"
 dependencies = [
  "once_cell",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "letter_bounced"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "env_logger",
+ "js-sys",
+ "log",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
 ]
 
 [[package]]

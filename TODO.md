@@ -47,7 +47,7 @@
   Note: The binary must be built with debug symbols. Use cargo build --release with debug symbols:
 
   RUSTFLAGS="-g" cargo build --release
-  instruments -t "Time Profiler" -D trace.trace ./target/release/boxchar
+  instruments -t "Time Profiler" -D trace.trace ./target/release/letter-bounced
 
 
 

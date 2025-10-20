@@ -1,4 +1,4 @@
-use boxchar::board::Board;
+use letter_bounced::board::Board;
 
 #[test]
 fn test_from_path() {

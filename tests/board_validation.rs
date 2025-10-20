@@ -1,4 +1,4 @@
-use boxchar::board::Board;
+use letter_bounced::board::Board;
 
 mod common;
 use common::sides_from_strs;

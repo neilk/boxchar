@@ -1,5 +1,5 @@
-use boxchar::board::Board;
-use boxchar::dictionary::Dictionary;
+use letter_bounced::board::Board;
+use letter_bounced::dictionary::Dictionary;
 
 mod common;
 use common::sides_from_strs;

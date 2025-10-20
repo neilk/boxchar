@@ -1,5 +1,5 @@
 [package]
-name = "boxchar"
+name = "letter_bounced"
 version = "0.1.0"
 edition = "2021"
 authors = ["Neil Kandalgaonkar <neilk@neilk.net>"]
@@ -16,12 +16,12 @@ js-sys = "0.3"
 web-sys = "0.3"
 
 [lib]
-name = "boxchar"
+name = "letter_bounced"
 path = "src/lib.rs"
 crate-type = ["cdylib", "rlib"]
 
 [[bin]]
-name = "boxchar"
+name = "letter-bounced"
 path = "src/main.rs"
 
 [[bin]]

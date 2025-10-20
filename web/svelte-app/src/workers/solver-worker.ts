@@ -1,4 +1,4 @@
-import init, { initialize_dictionary, solve_game, cancel_current_solve } from '../pkg/boxchar.js';
+import init, { initialize_dictionary, solve_game, cancel_current_solve } from '../pkg/letter_bounced.js';
 
 interface WorkerMessageData {
   type: 'INIT' | 'CANCEL' | 'SOLVE';
