@@ -13,6 +13,7 @@
   let solutionsByWordCount: string[][] = [];
   let modalSegment: number | null = null; // null or wordCount to show in modal
   let modalSortOrder: SortOrder = 'best'; // 'best' or 'alphabetical'
+  let modalSearchQuery: string = ''; // Search query for filtering modal solutions
 
   // Parse solution string to extract words and score
   function parseSolution(solutionStr: string): ParsedSolution {
@@ -55,9 +56,12 @@
       .sort((a, b) => a - b);
   }
 
-  // Get sorted solutions for modal based on current sort order
+  // Get sorted and filtered solutions for modal
   $: modalSolutions = modalSegment !== null && solutionsByWordCount[modalSegment]
-    ? getSortedSolutions(solutionsByWordCount[modalSegment] || [], modalSortOrder)
+    ? getFilteredSolutions(
+        getSortedSolutions(solutionsByWordCount[modalSegment] || [], modalSortOrder),
+        modalSearchQuery
+      )
     : [];
 
   function getSortedSolutions(solutionsArray: string[], sortOrder: SortOrder): string[] {
@@ -69,13 +73,26 @@
     return sorted;
   }
 
+  function getFilteredSolutions(solutionsArray: string[], searchQuery: string): string[] {
+    if (!searchQuery.trim()) {
+      return solutionsArray;
+    }
+    const query = searchQuery.toLowerCase();
+    return solutionsArray.filter((solution: string) => {
+      const { words } = parseSolution(solution);
+      return words.toLowerCase().includes(query);
+    });
+  }
+
   function showModal(wordCount: number): void {
     modalSegment = wordCount;
     modalSortOrder = 'best'; // Reset to 'best' when opening modal
+    modalSearchQuery = ''; // Reset search when opening modal
   }
 
   function closeModal(): void {
     modalSegment = null;
+    modalSearchQuery = ''; // Clear search when closing modal
   }
 
   // Handle escape key to close modal
@@ -144,13 +161,26 @@
     <div class="modal-content" on:click|stopPropagation role="document">
       <div class="modal-header">
         <div class="modal-header-left">
-          <h3>{modalSegment}-word solutions ({(solutionsByWordCount[modalSegment] || []).length} total)</h3>
-          <div class="sort-control">
-            <label for="sort-select">Sort by:</label>
-            <select id="sort-select" bind:value={modalSortOrder}>
-              <option value="best">Best</option>
-              <option value="alphabetical">A-Z</option>
-            </select>
+          <h3>{modalSegment}-word solutions 
+            ({(solutionsByWordCount[modalSegment] || []).length} 
+            total{#if modalSolutions.length < (solutionsByWordCount[modalSegment] || []).length}, {modalSolutions.length} shown{/if})</h3>
+          <div class="modal-controls">
+            <div class="sort-control">
+              <label for="sort-select">Sort by:</label>
+              <select id="sort-select" bind:value={modalSortOrder}>
+                <option value="best">Best</option>
+                <option value="alphabetical">A-Z</option>
+              </select>
+            </div>
+            <div class="search-control">
+              <label for="search-input">Search:</label>
+              <input
+                id="search-input"
+                type="text"
+                bind:value={modalSearchQuery}
+                placeholder="Filter solutions..."
+              />
+            </div>
           </div>
         </div>
         <button class="close-btn" on:click={closeModal}>&times;</button>
@@ -332,6 +362,12 @@
     font-size: 20px;
   }
 
+  .modal-controls {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
   .sort-control {
     display: flex;
     align-items: center;
@@ -356,6 +392,37 @@
   .sort-control select:focus {
     outline: 2px solid var(--color-primary);
     outline-offset: 1px;
+  }
+
+  .search-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .search-control label {
+    font-size: 14px;
+    color: var(--color-text-muted);
+  }
+
+  .search-control input {
+    padding: 4px 8px;
+    border: 1px solid var(--color-border-light);
+    border-radius: 4px;
+    background: var(--color-bg-container);
+    color: var(--color-text);
+    font-size: 14px;
+    min-width: 200px;
+  }
+
+  .search-control input:focus {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+  }
+
+  .search-control input::placeholder {
+    color: var(--color-text-muted);
+    opacity: 0.7;
   }
 
   .close-btn {
