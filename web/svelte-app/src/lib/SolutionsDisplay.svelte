@@ -1,5 +1,6 @@
 <script lang="ts">
   import { solutions, solving } from '../stores/solver-worker';
+  import { isPuzzleComplete } from '../stores/puzzle';
 
   interface ParsedSolution {
     words: string;
@@ -88,47 +89,49 @@
 <svelte:window on:keydown={handleKeydown} />
 
 <div class="solutions-container">
-  {#if $solving}
-    <!-- Show loading state while solving -->
-    <div class="loading-state">
-      <div class="loading-spinner"></div>
-      <span class="loading-text">Finding solutions...</span>
-    </div>
-  {:else if getWordCounts().length === 0}
-    <div class="no-solutions">No solutions yet. Enter a puzzle to solve.</div>
+  {#if $isPuzzleComplete}
+    {#if $solving}
+      <!-- Show loading state while solving -->
+      <div class="loading-state">
+        <div class="loading-spinner"></div>
+        <span class="loading-text">Finding solutions...</span>
+      </div>
+    {:else}
+      <!-- Solution summaries -->
+      <div class="expanded-view">
+        {#each getWordCounts() as wordCount}
+          {@const segmentSolutions = getSolutionsForWordCount(wordCount)}
+          {@const total = getTotalCount(wordCount)}
+          {@const showButton = total > 3}
+
+          <div class="segment">
+            <div class="segment-header">
+              <span class="segment-label">{wordCount} word{wordCount === 1 ? '' : 's'}: {total}</span>
+              {#if showButton}
+                <button
+                  class="show-all-btn"
+                  on:click={() => showModal(wordCount)}
+                >
+                  Show all
+                </button>
+              {/if}
+            </div>
+
+            <div class="solutions-list">
+              {#each segmentSolutions.slice(0, 3) as solution}
+                {@const parsed = parseSolution(solution)}
+                <div class="solution-item">
+                  <span class="solution-words">{parsed.words}</span>
+                  <span class="solution-score">{parsed.score}</span>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/each}
+      </div>
+    {/if}
   {:else}
-    <!-- Always show expanded view with solutions -->
-    <div class="expanded-view">
-      {#each getWordCounts() as wordCount}
-        {@const segmentSolutions = getSolutionsForWordCount(wordCount)}
-        {@const total = getTotalCount(wordCount)}
-        {@const showButton = total > 3}
-
-        <div class="segment">
-          <div class="segment-header">
-            <span class="segment-label">{wordCount} word{wordCount === 1 ? '' : 's'}: {total}</span>
-            {#if showButton}
-              <button
-                class="show-all-btn"
-                on:click={() => showModal(wordCount)}
-              >
-                Show all
-              </button>
-            {/if}
-          </div>
-
-          <div class="solutions-list">
-            {#each segmentSolutions.slice(0, 3) as solution}
-              {@const parsed = parseSolution(solution)}
-              <div class="solution-item">
-                <span class="solution-words">{parsed.words}</span>
-                <span class="solution-score">{parsed.score}</span>
-              </div>
-            {/each}
-          </div>
-        </div>
-      {/each}
-    </div>
+      <div class="no-solutions">No puzzle, no solutions...</div>
   {/if}
 </div>
 

@@ -6,16 +6,13 @@
   import ErrorDisplay from './lib/ErrorDisplay.svelte';
   import {
     puzzleFields,
-    isPuzzleComplete,
     loadPuzzleFromStorage
   } from './stores/puzzle';
   import {
     initializeSolverWorker,
     solvePuzzle as workerSolvePuzzle,
-    solverReady,
-    solving,
     solutions,
-    solveStats
+    solverReady
   } from './stores/solver-worker';
   import { throttle } from './utils/throttle';
 
@@ -37,22 +34,30 @@
     }
   });
 
-  // Auto-solve with throttle when puzzle changes
-  const throttledAutoSolve = throttle((fields: string[]) => {
-    if (fields.every(f => f.length === 1 && /^[A-Z]$/.test(f))) {
-      const sides = [
-        fields.slice(0, 3).join(''),   // top
-        fields.slice(3, 6).join(''),   // right
-        fields.slice(9, 12).join(''),  // bottom
-        fields.slice(6, 9).join('')    // left
-      ].map(s => s.toLowerCase());
-
-      workerSolvePuzzle(sides);
-    }
+  // Throttled solve function - only throttle the actual solving
+  const throttledSolve = throttle((sides: string[]) => {
+    workerSolvePuzzle(sides);
   }, 300);
 
-  // Subscribe to puzzle changes for auto-solve
-  puzzleFields.subscribe(throttledAutoSolve);
+  // Reactive statement: auto-solve when puzzle changes or solver becomes ready
+  $: {
+    if ($puzzleFields.every(f => f.length === 1 && /^[A-Z]$/.test(f))) {
+      // Puzzle is complete
+      if ($solverReady) {
+        const sides = [
+          $puzzleFields.slice(0, 3).join(''),   // top
+          $puzzleFields.slice(3, 6).join(''),   // right
+          $puzzleFields.slice(9, 12).join(''),  // bottom
+          $puzzleFields.slice(6, 9).join('')    // left
+        ].map(s => s.toLowerCase());
+
+        throttledSolve(sides);
+      }
+    } else {
+      // Puzzle is incomplete - clear solutions immediately (no throttle)
+      solutions.set([]);
+    }
+  }
 </script>
 
 <main>
@@ -117,21 +122,6 @@
     justify-content: center;
     align-items: flex-start;
     margin: 20px 0;
-  }
-
-  .status-message {
-    text-align: center;
-    padding: 12px 20px;
-    border-radius: 6px;
-    font-size: 15px;
-    margin: 15px 0;
-    font-weight: 500;
-    transition: all 0.3s ease;
-  }
-
-  .status-message.loading {
-    background: var(--color-bg-light);
-    color: var(--color-text-muted);
   }
 
   .error {
