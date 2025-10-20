@@ -1,4 +1,4 @@
-import init, { initialize_dictionary, solve_game_streaming, cancel_current_solve } from '../pkg/boxchar.js';
+import init, { initialize_dictionary, solve_game, cancel_current_solve } from '../pkg/boxchar.js';
 
 interface WorkerMessageData {
   type: 'INIT' | 'CANCEL' | 'SOLVE';
@@ -11,10 +11,9 @@ interface WorkerMessageData {
 }
 
 interface OutgoingMessage {
-  type: 'READY' | 'BATCH' | 'COMPLETE' | 'CANCELLED' | 'ERROR';
+  type: 'READY' | 'COMPLETE' | 'CANCELLED' | 'ERROR';
   solveId?: number;
   solutions?: string[];
-  totalReceived?: number;
   totalCount?: number;
   duration?: number;
   error?: string;
@@ -55,62 +54,49 @@ self.addEventListener('message', async (e: MessageEvent<WorkerMessageData>) => {
     // Wait for WASM to be ready
     await wasmReady;
 
-    // Cancel any previous solve
-    if (currentSolveId !== null) {
-      cancel_current_solve();
-    }
-
+    // Note: The WASM layer now handles cancellation automatically when a new solve
+    // with different params is requested. We just track solveId for message correlation.
     currentSolveId = solveId ?? null;
     const sides = payload?.sides ?? [];
     const maxSolutions = payload?.maxSolutions ?? 10000;
 
-    let totalReceived = 0;
-
-    // Callback function that WASM will call for each batch
-    const onBatch = (solutionBatch: string[]) => {
-      // Check if this solve is still current
-      if (currentSolveId === solveId) {
-        totalReceived += solutionBatch.length;
-
-        // Convert JS array to regular array of strings
-        const solutions = Array.from(solutionBatch);
-
-        self.postMessage({
-          type: 'BATCH',
-          solveId,
-          solutions,
-          totalReceived
-        } as OutgoingMessage);
-      }
-    };
-
     try {
       const startTime = performance.now();
-      const totalCount = solve_game_streaming(sides, maxSolutions, onBatch);
+
+      // Call the Promise-based solve_game
+      const solutions = await solve_game(sides, maxSolutions);
       const duration = Math.round(performance.now() - startTime);
 
-      // Only send complete message if this solve wasn't cancelled
+      // Convert JS array to regular array of strings
+      const solutionsArray = Array.from(solutions);
+
+      // Only send complete message if this solve is still current
       if (currentSolveId === solveId) {
         self.postMessage({
           type: 'COMPLETE',
           solveId,
-          totalCount,
+          solutions: solutionsArray,
+          totalCount: solutionsArray.length,
           duration
         } as OutgoingMessage);
         currentSolveId = null;
-      } else {
-        self.postMessage({
-          type: 'CANCELLED',
-          solveId,
-          totalCount: totalReceived
-        } as OutgoingMessage);
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
-      self.postMessage({
-        type: 'ERROR',
-        error: errorMessage
-      } as OutgoingMessage);
+
+      // Check if it was a cancellation
+      if (errorMessage === 'Cancelled' || errorMessage.includes('already in progress')) {
+        self.postMessage({
+          type: 'CANCELLED',
+          solveId
+        } as OutgoingMessage);
+      } else {
+        self.postMessage({
+          type: 'ERROR',
+          solveId,
+          error: errorMessage
+        } as OutgoingMessage);
+      }
       currentSolveId = null;
     }
   }

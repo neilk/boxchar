@@ -3,6 +3,8 @@ use crate::dictionary::{Dictionary, Word};
 use std::collections::HashMap;
 use std::fmt;
 use std::cmp::min;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Solution {
@@ -177,13 +179,29 @@ impl Solver {
     }
 
     pub fn solve(&self) -> Vec<Solution> {
+        self.solve_cancellable(None)
+    }
+
+    /// Solve with cancellation support
+    ///
+    /// The `cancel_flag` parameter allows external cancellation of the solve operation.
+    /// When the flag is set to true, the solver will stop as soon as possible.
+    pub fn solve_cancellable(&self, cancel_flag: Option<Arc<AtomicBool>>) -> Vec<Solution> {
         let mut solutions = Vec::new();
 
         // Try solutions of each exact length
         for target_words in 1..=4 {
             let mut current_path = Vec::new();
-            self.search_recursive(&mut current_path, 0, None, &mut solutions, target_words);
-            if solutions.len() >= self.max_solutions {
+            let cancelled = !self.search_recursive(
+                &mut current_path,
+                0,
+                None,
+                &mut solutions,
+                target_words,
+                cancel_flag.as_ref(),
+            );
+
+            if cancelled || solutions.len() >= self.max_solutions {
                 break;
             }
         }
@@ -197,48 +215,6 @@ impl Solver {
         solutions
     }
 
-    /// Solve with streaming results via callback batches
-    /// Returns the total number of solutions found
-    pub fn solve_streaming<F>(&self, mut on_batch: F, generation: u32) -> usize
-    where
-        F: FnMut(&[Solution]) -> bool, // Called with batches, returns false if cancelled
-    {
-        const BATCH_SIZE: usize = 100;
-        let mut solution_batch = Vec::with_capacity(BATCH_SIZE);
-        let mut total_count = 0;
-
-        for target_words in 1..=4 {
-            let mut current_path = Vec::new();
-            if !self.search_recursive_streaming(
-                &mut current_path,
-                0,
-                None,
-                &mut solution_batch,
-                &mut on_batch,
-                &mut total_count,
-                target_words,
-                generation,
-            ) {
-                // Cancelled - flush any remaining solutions before returning
-                if !solution_batch.is_empty() {
-                    on_batch(&solution_batch);
-                }
-                return total_count;
-            }
-
-            if total_count >= self.max_solutions {
-                break;
-            }
-        }
-
-        // Flush any remaining solutions
-        if !solution_batch.is_empty() {
-            on_batch(&solution_batch);
-        }
-
-        total_count
-    }
-
     fn search_recursive(
         &self,
         current_path: &mut Vec<Word>,
@@ -246,10 +222,19 @@ impl Solver {
         last_char: Option<char>,
         solutions: &mut Vec<Solution>,
         target_words: usize,
-    ) {
+        cancel_flag: Option<&Arc<AtomicBool>>,
+    ) -> bool // Returns true if not cancelled
+    {
+        // Check for cancellation
+        if let Some(flag) = cancel_flag {
+            if flag.load(Ordering::Relaxed) {
+                return false; // Cancelled
+            }
+        }
+
         // Early termination if we have enough solutions
         if solutions.len() >= self.max_solutions {
-            return;
+            return true;
         }
 
         // Check if we've found a complete solution of the target length
@@ -257,13 +242,13 @@ impl Solver {
             let solution = Solution::new(current_path.clone());
             if !self.is_solution_redundant(&solution) {
                 solutions.push(solution);
-                return;
+                return true;
             }
         }
 
         // Don't go deeper if we've hit the word limit
         if current_path.len() >= target_words {
-            return;
+            return true;
         }
 
         // Determine which words we can try next
@@ -287,95 +272,13 @@ impl Solver {
                 current_path.push(word_bitmap.word.clone());
                 let new_last_char = word_bitmap.word.word.chars().last();
 
-                self.search_recursive(
+                if !self.search_recursive(
                     current_path,
                     new_bitmap,
                     new_last_char,
                     solutions,
                     target_words,
-                );
-
-                current_path.pop();
-            }
-        }
-    }
-
-    fn search_recursive_streaming<F>(
-        &self,
-        current_path: &mut Vec<Word>,
-        covered_bitmap: u32,
-        last_char: Option<char>,
-        solution_batch: &mut Vec<Solution>,
-        on_batch: &mut F,
-        total_count: &mut usize,
-        target_words: usize,
-        _generation: u32,
-    ) -> bool // Returns false if cancelled
-    where
-        F: FnMut(&[Solution]) -> bool,
-    {
-        // Early termination if we have enough solutions
-        if *total_count >= self.max_solutions {
-            return true;
-        }
-
-        // Check if we've found a complete solution of the target length
-        if covered_bitmap == self.all_letters_mask && current_path.len() == target_words {
-            let solution = Solution::new(current_path.clone());
-            if !self.is_solution_redundant(&solution) {
-                solution_batch.push(solution);
-                *total_count += 1;
-
-                // Adaptive batch size: small for first batch (quick feedback), larger after
-                let batch_threshold = if *total_count <= 10 { 10 } else { 100 };
-
-                // When batch is full, send it and check for cancellation
-                if solution_batch.len() >= batch_threshold {
-                    if !on_batch(solution_batch) {
-                        return false; // Cancelled
-                    }
-                    solution_batch.clear();
-                }
-
-                // Also check max_solutions
-                if *total_count >= self.max_solutions {
-                    return true;
-                }
-            }
-        }
-
-        // Don't go deeper if we've hit the word limit
-        if current_path.len() >= target_words {
-            return true;
-        }
-
-        // Determine which words we can try next
-        let word_indices: Vec<usize> = if let Some(ch) = last_char {
-            self.words_by_first_letter
-                .get(&ch)
-                .map(|v| v.clone())
-                .unwrap_or_default()
-        } else {
-            (0..self.word_bitmaps.len()).collect()
-        };
-
-        for word_idx in word_indices {
-            let word_bitmap = &self.word_bitmaps[word_idx];
-            let new_bitmap = covered_bitmap | word_bitmap.bitmap;
-
-            if new_bitmap != covered_bitmap {
-                current_path.push(word_bitmap.word.clone());
-                let new_last_char = word_bitmap.word.word.chars().last();
-
-                if !self.search_recursive_streaming(
-                    current_path,
-                    new_bitmap,
-                    new_last_char,
-                    solution_batch,
-                    on_batch,
-                    total_count,
-                    target_words,
-                    _generation,
+                    cancel_flag,
                 ) {
                     current_path.pop();
                     return false; // Cancelled
