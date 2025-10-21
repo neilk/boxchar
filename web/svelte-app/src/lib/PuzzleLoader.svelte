@@ -10,6 +10,11 @@
 
   const NYT_TODAY_VALUE: string = '__NYT_TODAY__';
 
+  function triggerSequentialJump(): void {
+    // Dispatch custom event to trigger animation
+    window.dispatchEvent(new CustomEvent('puzzleLoaded'));
+  }
+
   const examplePuzzles: ExamplePuzzle[] = [
     { label: 'Sample: JGH NVY EID ORP', value: 'JGHNVYEIDORP' },
     { label: 'Sample: YFA OTK LGW RNI', value: 'YFAOTKLGWRNI' },
@@ -47,6 +52,9 @@
       // Convert sides array to fields array
       const fields: string[] = sidesData.flatMap((side: string) => side.split(''));
       puzzleFields.set(fields);
+
+      // Trigger animation
+      triggerSequentialJump();
     } catch (error) {
       const message: string = error instanceof Error ? error.message : 'Unknown error';
       alert('Failed to load today\'s puzzle: ' + message);
@@ -67,6 +75,9 @@
       // Convert string of 12 letters to array
       const fields: string[] = value.split('');
       puzzleFields.set(fields);
+
+      // Trigger animation
+      triggerSequentialJump();
     }
 
     // Reset dropdown

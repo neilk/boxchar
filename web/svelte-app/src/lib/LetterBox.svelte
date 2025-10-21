@@ -1,7 +1,29 @@
 <script lang="ts">
   import { puzzleFields } from '../stores/puzzle';
+  import { onMount, onDestroy } from 'svelte';
 
   let jumping: boolean[] = Array(12).fill(false);
+
+  function triggerSequentialJump(): void {
+    // Animate each field in sequence
+    for (let i = 0; i < 12; i++) {
+      setTimeout(() => {
+        jumping[i] = true;
+      }, i * 50); // 100ms delay between each jump
+    }
+  }
+
+  function handlePuzzleLoaded(): void {
+    triggerSequentialJump();
+  }
+
+  onMount(() => {
+    window.addEventListener('puzzleLoaded', handlePuzzleLoaded);
+  });
+
+  onDestroy(() => {
+    window.removeEventListener('puzzleLoaded', handlePuzzleLoaded);
+  });
 
   function handleInput(index: number, event: Event): void {
     const target = event.target as HTMLInputElement;
