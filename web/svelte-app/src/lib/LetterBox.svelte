@@ -1,7 +1,7 @@
 <script lang="ts">
   import { puzzleFields } from '../stores/puzzle';
 
-  let jumpingIndex: number = -1;
+  let jumping: boolean[] = Array(12).fill(false);
 
   function handleInput(index: number, event: Event): void {
     const target = event.target as HTMLInputElement;
@@ -20,7 +20,7 @@
       });
 
       // Trigger jump animation
-      jumpingIndex = index;
+      jumping[index] = true;
 
       // Auto-advance to next field
       if (letter && index < 11) {
@@ -40,8 +40,8 @@
     }
   }
 
-  function handleAnimationEnd(): void {
-    jumpingIndex = -1;
+  function handleAnimationEnd(index: number): void {
+    jumping[index] = false;
   }
 
   function handleKeydown(index: number, event: KeyboardEvent): void {
@@ -69,14 +69,14 @@
       type="text"
       id="char{String(index).padStart(2, '0')}"
       class="letter-field"
-      class:jump={jumpingIndex === index}
+      class:jump={jumping[index]}
       maxlength="1"
       value={$puzzleFields[index]}
       on:input={(e) => handleInput(index, e)}
       on:keydown={(e) => handleKeydown(index, e)}
       on:click={handleClick}
       on:focus={handleClick}
-      on:animationend={handleAnimationEnd}>
+      on:animationend={() => handleAnimationEnd(index)}>
   {/each}
 </div>
 
