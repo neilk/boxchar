@@ -126,13 +126,13 @@
 
           <div class="segment">
             <div class="segment-header">
-              <span class="segment-label">{wordCount} word{wordCount === 1 ? '' : 's'}: {total}</span>
+              <span class="segment-label">{wordCount}-word solution{wordCount === 1 ? '' : 's'}</span>
               {#if showButton}
                 <button
                   class="show-all-btn"
                   on:click={() => showModal(wordCount)}
                 >
-                  Show all
+                  Show all {total}
                 </button>
               {/if}
             </div>
@@ -357,6 +357,7 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    align-items: flex-start;
   }
 
   .modal-header h3 {
