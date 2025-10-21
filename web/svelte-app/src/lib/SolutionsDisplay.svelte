@@ -113,6 +113,9 @@
         <div class="loading-spinner"></div>
         <span class="loading-text">Finding solutions...</span>
       </div>
+    {:else if $solutions.length === 0}
+      <!-- No solutions found -->
+      <div class="no-solutions">No solutions found!</div>
     {:else}
       <!-- Solution summaries -->
       <div class="expanded-view">
