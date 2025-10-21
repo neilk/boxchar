@@ -1,16 +1,10 @@
-import { test, expect } from '@playwright/test';
-
-async function load(page) {
-  await page.goto('/');
-  await page.waitForLoadState('networkidle');
-}
+import { expect, test } from './fixture';
 
 function getLetterBoxInputs(page) {
   return page.locator('.letter-box-container input[type="text"]');
 }
 
 test('page loads successfully', async ({ page }) => {
-  await load(page);
 
   // Check that the page title is set
   await expect(page).toHaveTitle(/Letter/);
@@ -21,7 +15,6 @@ test('page loads successfully', async ({ page }) => {
 });
 
 test('letter box is present', async ({ page }) => {
-  await load(page);
 
   // Check that letter input fields are present (should be 12 fields)
   const inputs = getLetterBoxInputs(page);
@@ -29,7 +22,6 @@ test('letter box is present', async ({ page }) => {
 });
 
 test('solving puzzle NUO,ERT,LCP,YIA finds neurotypical', async ({ page }) => {
-  await load(page);
 
   // Get all 12 input fields
   const inputs = getLetterBoxInputs(page);
