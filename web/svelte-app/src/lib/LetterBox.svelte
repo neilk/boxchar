@@ -155,8 +155,8 @@
   #char10 { grid-column: 3; grid-row: 5; }
   #char11 { grid-column: 4; grid-row: 5; }
 
-  /* Jump animation */
-  @keyframes jump {
+  /* Jump animations - each side jumps away from center */
+  @keyframes jump-up {
     0% {
       transform: translateY(0);
     }
@@ -168,7 +168,67 @@
     }
   }
 
-  .letter-field.jump {
-    animation: jump 0.4s ease-out;
+  @keyframes jump-right {
+    0% {
+      transform: translateX(0);
+    }
+    50% {
+      transform: translateX(25%);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes jump-down {
+    0% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(25%);
+    }
+    100% {
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes jump-left {
+    0% {
+      transform: translateX(0);
+    }
+    50% {
+      transform: translateX(-25%);
+    }
+    100% {
+      transform: translateX(0);
+    }
+  }
+
+  /* Top side (char00, char01, char02) - jump up */
+  #char00.jump,
+  #char01.jump,
+  #char02.jump {
+    animation: jump-up 0.4s ease-out;
+  }
+
+  /* Right side (char03, char04, char05) - jump right */
+  #char03.jump,
+  #char04.jump,
+  #char05.jump {
+    animation: jump-right 0.4s ease-out;
+  }
+
+  /* Bottom side (char09, char10, char11) - jump down */
+  #char09.jump,
+  #char10.jump,
+  #char11.jump {
+    animation: jump-down 0.4s ease-out;
+  }
+
+  /* Left side (char06, char07, char08) - jump left */
+  #char06.jump,
+  #char07.jump,
+  #char08.jump {
+    animation: jump-left 0.4s ease-out;
   }
 </style>
