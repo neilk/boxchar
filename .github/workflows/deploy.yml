@@ -47,7 +47,7 @@ jobs:
       - name: Build Svelte app
         run: |
           cd web/svelte-app
-          npm run build:github
+          npm run build
 
       - name: Install Playwright browsers
         run: |
