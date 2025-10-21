@@ -1,10 +1,16 @@
 import { test, expect } from '@playwright/test';
 
-test('page loads successfully', async ({ page }) => {
+async function load(page) {
   await page.goto('/');
-
-  // Wait for the page to load
   await page.waitForLoadState('networkidle');
+}
+
+function getLetterBoxInputs(page) {
+  return page.locator('.letter-box-container input[type="text"]');
+}
+
+test('page loads successfully', async ({ page }) => {
+  await load(page);
 
   // Check that the page title is set
   await expect(page).toHaveTitle(/Letter/);
@@ -15,12 +21,28 @@ test('page loads successfully', async ({ page }) => {
 });
 
 test('letter box is present', async ({ page }) => {
-  await page.goto('/');
-
-  // Wait for the page to load
-  await page.waitForLoadState('networkidle');
+  await load(page);
 
   // Check that letter input fields are present (should be 12 fields)
-  const inputs = page.locator('input[type="text"]');
+  const inputs = getLetterBoxInputs(page);
   await expect(inputs).toHaveCount(12);
+});
+
+test('solving puzzle NUO,ERT,LCP,YIA finds neurotypical', async ({ page }) => {
+  await load(page);
+
+  // Get all 12 input fields
+  const inputs = getLetterBoxInputs(page);
+  await expect(inputs).toHaveCount(12);
+
+  // Enter the puzzle letters: NUO,ERT,LCP,YIA
+  const letters = ['N', 'U', 'O', 'E', 'R', 'T', 'Y', 'I', 'A', 'L', 'C', 'P'];
+
+  for (let i = 0; i < letters.length; i++) {
+    await inputs.nth(i).fill(letters[i]);
+  }
+
+  // The shortest solution: "neurotypical"
+  const solutionText = page.locator('text=/neurotypical/i');
+  await expect(solutionText).toBeVisible({ timeout: 10000 });
 });
