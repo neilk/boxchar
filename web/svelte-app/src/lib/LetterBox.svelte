@@ -1,6 +1,8 @@
 <script lang="ts">
   import { puzzleFields } from '../stores/puzzle';
 
+  let jumpingIndex: number = -1;
+
   function handleInput(index: number, event: Event): void {
     const target = event.target as HTMLInputElement;
     const value = target.value.toUpperCase();
@@ -16,6 +18,9 @@
         newFields[index] = letter;
         return newFields;
       });
+
+      // Trigger jump animation
+      jumpingIndex = index;
 
       // Auto-advance to next field
       if (letter && index < 11) {
@@ -33,6 +38,10 @@
         return newFields;
       });
     }
+  }
+
+  function handleAnimationEnd(): void {
+    jumpingIndex = -1;
   }
 
   function handleKeydown(index: number, event: KeyboardEvent): void {
@@ -60,12 +69,14 @@
       type="text"
       id="char{String(index).padStart(2, '0')}"
       class="letter-field"
+      class:jump={jumpingIndex === index}
       maxlength="1"
       value={$puzzleFields[index]}
       on:input={(e) => handleInput(index, e)}
       on:keydown={(e) => handleKeydown(index, e)}
       on:click={handleClick}
-      on:focus={handleClick}>
+      on:focus={handleClick}
+      on:animationend={handleAnimationEnd}>
   {/each}
 </div>
 
@@ -121,4 +132,21 @@
   #char09 { grid-column: 2; grid-row: 5; }
   #char10 { grid-column: 3; grid-row: 5; }
   #char11 { grid-column: 4; grid-row: 5; }
+
+  /* Jump animation */
+  @keyframes jump {
+    0% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-25%);
+    }
+    100% {
+      transform: translateY(0);
+    }
+  }
+
+  .letter-field.jump {
+    animation: jump 0.4s ease-out;
+  }
 </style>
