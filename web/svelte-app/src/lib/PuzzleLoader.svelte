@@ -8,13 +8,15 @@
 
   let loading: boolean = false;
 
+  const NYT_TODAY_VALUE: string = '__NYT_TODAY__';
+
   const examplePuzzles: ExamplePuzzle[] = [
-    { label: 'JGH NVY EID ORP', value: 'JGHNVYEIDORP' },
-    { label: 'YFA OTK LGW RNI', value: 'YFAOTKLGWRNI' },
-    { label: 'LHM CIB ANK OUP', value: 'LHMCIBANKOUP' },
-    { label: 'GIY ERC XHA LOP', value: 'GIYERCXHALOP' },
-    { label: 'PRC YAN LKH SIO', value: 'PRCYANLKHSIO' },
-    { label: 'VYQ FIG OTE XLU', value: 'VYQFIGOTEXLU' }
+    { label: 'Sample: JGH NVY EID ORP', value: 'JGHNVYEIDORP' },
+    { label: 'Sample: YFA OTK LGW RNI', value: 'YFAOTKLGWRNI' },
+    { label: 'Sample: LHM CIB ANK OUP', value: 'LHMCIBANKOUP' },
+    { label: 'Sample: GIY ERC XHA LOP', value: 'GIYERCXHALOP' },
+    { label: 'Sample: PRC YAN LKH SIO', value: 'PRCYANLKHSIO' },
+    { label: 'Sample: VYQ FIG OTE XLU', value: 'VYQFIGOTEXLU' }
   ];
 
   async function loadTodaysPuzzle(): Promise<void> {
@@ -53,14 +55,19 @@
     }
   }
 
-  function loadExample(event: Event): void {
+  async function handlePuzzleSelection(event: Event): Promise<void> {
     const target = event.target as HTMLSelectElement;
     const value: string = target.value;
     if (!value) return;
 
-    // Convert string of 12 letters to array
-    const fields: string[] = value.split('');
-    puzzleFields.set(fields);
+    // Check if NYT Today was selected
+    if (value === NYT_TODAY_VALUE) {
+      await loadTodaysPuzzle();
+    } else {
+      // Convert string of 12 letters to array
+      const fields: string[] = value.split('');
+      puzzleFields.set(fields);
+    }
 
     // Reset dropdown
     setTimeout(() => {
@@ -70,17 +77,11 @@
 </script>
 
 <div class="puzzle-loader">
-  <span class="puzzle-loader-label">Get a puzzle:</span>
-  <button
-    class="pill-button"
-    on:click={loadTodaysPuzzle}
-    disabled={loading}
-  >
-    {loading ? 'Loading...' : 'NYT'}
-  </button>
+  <span class="puzzle-loader-label">Enter a puzzle, or</span>
   <div class="pill-select-wrapper">
-    <select class="pill-select" on:change={loadExample}>
-      <option value="">Sample</option>
+    <select class="pill-select" on:change={handlePuzzleSelection} disabled={loading}>
+      <option value="">{loading ? 'Loading...' : 'choose a puzzle'}</option>
+      <option value={NYT_TODAY_VALUE}>Today's New York Times</option>
       {#each examplePuzzles as puzzle}
         <option value={puzzle.value}>{puzzle.label}</option>
       {/each}
@@ -102,27 +103,6 @@
     color: var(--color-text);
   }
 
-  .pill-button {
-    background: var(--color-primary);
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 20px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: background 0.2s;
-    white-space: nowrap;
-  }
-
-  .pill-button:hover:not(:disabled) {
-    background: var(--color-primary-hover);
-  }
-
-  .pill-button:disabled {
-    background: var(--color-disabled);
-    cursor: not-allowed;
-  }
-
   .pill-select-wrapper {
     position: relative;
     display: inline-block;
@@ -142,8 +122,13 @@
     transition: background 0.2s;
   }
 
-  .pill-select:hover {
+  .pill-select:hover:not(:disabled) {
     background: var(--color-primary-hover);
+  }
+
+  .pill-select:disabled {
+    background: var(--color-disabled);
+    cursor: not-allowed;
   }
 
   .pill-select-wrapper::after {

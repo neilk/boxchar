@@ -61,8 +61,7 @@
 </script>
 
 <main>
-  <h1>Letter Boxed Solver</h1>
-  <p>Enter the letters for each side of the Letter Boxed puzzle. Solutions will appear automatically as you type.</p>
+  <h1>Letter Bounced</h1>
 
   {#if initError}
     <div class="error">Failed to initialize solver: {initError}</div>
