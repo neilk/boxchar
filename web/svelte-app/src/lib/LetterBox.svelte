@@ -47,7 +47,7 @@
       // Auto-advance to next field
       if (letter && index < 11) {
         const nextField = document.getElementById(`char${String(index + 1).padStart(2, '0')}`);
-        if (nextField) {
+        if (nextField instanceof HTMLInputElement) {
           nextField.focus();
           nextField.select();
         }
@@ -72,17 +72,18 @@
     if (event.key === 'Backspace' && !target.value && index > 0) {
       event.preventDefault();
       const prevField = document.getElementById(`char${String(index - 1).padStart(2, '0')}`);
-      if (prevField) {
+      if (prevField instanceof HTMLInputElement) {
         prevField.focus();
         prevField.select();
       }
     }
   }
 
-  function handleClick(event: MouseEvent): void {
+  function handleFocusOrClick(event: MouseEvent | FocusEvent): void {
     const target = event.target as HTMLInputElement;
     target.select();
   }
+
 </script>
 
 <div class="letter-box-container">
@@ -92,12 +93,11 @@
       id="char{String(index).padStart(2, '0')}"
       class="letter-field"
       class:jump={jumping[index]}
-      maxlength="1"
       value={$puzzleFields[index]}
       on:input={(e) => handleInput(index, e)}
       on:keydown={(e) => handleKeydown(index, e)}
-      on:click={handleClick}
-      on:focus={handleClick}
+      on:click={handleFocusOrClick}
+      on:focus={handleFocusOrClick}
       on:animationend={() => handleAnimationEnd(index)}>
   {/each}
 </div>
