@@ -1,7 +1,14 @@
 import { expect, test } from './fixture';
 
-function getLetterBoxInputs(page) {
+function getLetterInputs(page) {
   return page.locator('.letter-box-container input[type="text"]');
+}
+
+async function enterPuzzle(page, letters) {
+  const inputs = getLetterInputs(page);
+  for (let i = 0; i < letters.length; i++) {
+    await inputs.nth(i).fill(letters[i]);
+  }
 }
 
 test('page loads successfully', async ({ page }) => {
@@ -15,26 +22,27 @@ test('page loads successfully', async ({ page }) => {
 });
 
 test('letter box is present', async ({ page }) => {
-
   // Check that letter input fields are present (should be 12 fields)
-  const inputs = getLetterBoxInputs(page);
+  const inputs = getLetterInputs(page);
   await expect(inputs).toHaveCount(12);
 });
 
-test('solving puzzle NUO,ERT,LCP,YIA finds neurotypical', async ({ page }) => {
+test('solve a puzzle', async ({ page }) => {
 
-  // Get all 12 input fields
-  const inputs = getLetterBoxInputs(page);
-  await expect(inputs).toHaveCount(12);
-
-  // Enter the puzzle letters: NUO,ERT,LCP,YIA
-  const letters = ['N', 'U', 'O', 'E', 'R', 'T', 'Y', 'I', 'A', 'L', 'C', 'P'];
-
-  for (let i = 0; i < letters.length; i++) {
-    await inputs.nth(i).fill(letters[i]);
-  }
-
+  await enterPuzzle(page, ['N', 'U', 'O', 'E', 'R', 'T', 'Y', 'I', 'A', 'L', 'C', 'P']);
   // The shortest solution: "neurotypical"
   const solutionText = page.locator('text=/neurotypical/i');
   await expect(solutionText).toBeVisible({ timeout: 10000 });
 });
+
+test('puzzle with no solutions', async ({ page }) => {
+
+  // Enter a puzzle with no solutions - it has no vowels
+  await enterPuzzle(page, ['B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P']);
+
+  // Wait for solving to complete and check for the "No solutions found!" message
+  const noSolutionsMessage = page.locator('text=/No solutions found!/i');
+  await expect(noSolutionsMessage).toBeVisible({ timeout: 10000 });
+});
+
+
