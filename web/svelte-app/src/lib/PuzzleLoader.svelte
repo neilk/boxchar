@@ -38,7 +38,7 @@
       const regex: RegExp = /window\.gameData.*?"sides"\s*:\s*(\[.*?\])/;
       const match: RegExpMatchArray | null = html.match(regex);
 
-      if (!match) {
+      if (!match || !match[1]) {
         alert('Failed to find puzzle data on the NYT page. The page format may have changed.');
         return;
       }
