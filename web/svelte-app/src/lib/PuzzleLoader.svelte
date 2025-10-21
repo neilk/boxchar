@@ -152,4 +152,11 @@
     color: white;
     font-size: 10px;
   }
+
+  @media (max-width: 600px) {
+    .puzzle-loader {
+      flex-direction: column;
+      gap: 8px;
+    }
+  }
 </style>

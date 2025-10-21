@@ -5,11 +5,11 @@
   let jumping: boolean[] = Array(12).fill(false);
 
   function triggerSequentialJump(): void {
-    // Animate each field in sequence
-    for (let i = 0; i < 12; i++) {
+    // Animate each field in sequence, clockwise
+    for (const [index, charIndex] of [0, 1, 2, 3, 4, 5, 11, 10, 9, 8, 7, 6].entries()) {
       setTimeout(() => {
-        jumping[i] = true;
-      }, i * 50); // 100ms delay between each jump
+        jumping[charIndex] = true;
+      }, index * 50); // 100ms delay between each jump
     }
   }
 
