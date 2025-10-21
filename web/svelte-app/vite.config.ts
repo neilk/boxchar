@@ -5,6 +5,7 @@ import { svelte } from '@sveltejs/vite-plugin-svelte'
 export default defineConfig({
   plugins: [svelte()],
   appType: 'mpa', // Disable SPA fallback
+  base: './', // Use relative paths for GitHub Pages deployment
   server: {
     port: 8000,
     host: true // Expose on network

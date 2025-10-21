@@ -24,7 +24,7 @@
 
     // Initialize solver worker with dictionary
     try {
-      const response = await fetch('/dictionary.txt');
+      const response = await fetch('./dictionary.txt');
       const dictionaryText = await response.text();
       const dictionaryData = new TextEncoder().encode(dictionaryText);
       initializeSolverWorker(dictionaryData);

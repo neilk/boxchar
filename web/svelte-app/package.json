@@ -6,7 +6,6 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:github": "vite build --base=/letterbounced/",
     "preview": "vite preview",
     "test": "playwright test",
     "test:ui": "playwright test --ui"
