@@ -105,21 +105,20 @@
 <style>
   .letter-box-container {
     width: 100%;
-    max-width: 500px;
     aspect-ratio: 1;
     position: relative;
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     grid-template-rows: repeat(5, 1fr);
     gap: 8px;
-    padding: 20px;
+    /* padding: 20px; */
   }
 
   .letter-field {
     width: 100%;
     height: 100%;
     text-align: center;
-    font-size: clamp(16px, 3vw, 32px);
+    font-size: clamp(24px, 8vw, 80px);
     font-weight: bold;
     text-transform: uppercase;
     color: var(--color-text-input);

@@ -105,23 +105,23 @@
 
   .container {
     background: var(--color-bg-container);
-    padding: 20px;
+    /* padding: 20px; */
     border-radius: 8px;
-    margin: 20px 0;
+    /* margin: 20px 0; */
   }
 
   .example {
-    background: var(--color-bg-example);
-    padding: 15px;
-    border-radius: 4px;
-    margin: 20px 0;
+    /* background: var(--color-bg-example); */
+    /* padding: 15px;
+    border-radius: 4px; */
+    margin: /*20px */ 0;
   }
 
   .game-input {
     display: flex;
     justify-content: center;
     align-items: flex-start;
-    margin: 20px 0;
+    margin: 0; /* 20px 0; */
   }
 
   .error {
