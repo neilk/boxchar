@@ -2,7 +2,7 @@
 
 A solver for the New York Times word puzzle, "Letter Boxed". 
 
-Try it out at https://neilk.github.io/boxchar/ !
+Try it out at https://neilk.github.io/letterbounced/ !
 
 ## Why?
 
